@@ -1,6 +1,7 @@
 from datetime import date
 from decimal import Decimal
 from pydantic import BaseModel, Field
+from enum import Enum
 
 
 class RevenueSummary(BaseModel):
@@ -54,4 +55,45 @@ class RevenueSummary(BaseModel):
         examples=["USD"],
         min_length=3,
         max_length=3,
+    )
+
+class Granularity(str, Enum):
+    """Level agregasi untuk time series data"""
+    DAY = "day"
+    WEEK = "week"
+    MONTH = "month"
+
+class RevenueTrendPoint(BaseModel):
+    """Satu data point dalam time series revenue"""
+
+    date: date = Field(
+        ...,
+        description="Date (for granuralit=day) or start date poeriod (wweek/month)",
+        examples=["2026-01-01"],
+    )
+    net_sales: Decimal = Field(
+        ...,
+        description="Net sales for this period",
+        examples=["5200.00"],
+    )
+    orders: int = Field(
+        ...,
+        description="Total orders for this period",
+        ge=0,
+        examples=[45]
+    )
+
+class RevenueTrend(BaseModel):
+    """Response schema for revenue trend (time series)"""
+    start_date: date = Field(..., description="Start date period")
+    end_date: date= Field(..., description="End date period")
+    granularity: Granularity = Field(..., description="Level aggregation date")
+    date_points: list[RevenueTrendPoint] = Field(
+        ...,
+        description="Time series data, order by oldest date"
+    )
+    total_points: int = Field(
+        ...,
+        description="Total data point",
+        ge=0,
     )
