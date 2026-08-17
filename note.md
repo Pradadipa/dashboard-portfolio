@@ -1,0 +1,2 @@
+# Penjelasan file
+- app/core/config.py : untuk membaca setting aplikasi (databases URL, dll) dari file .env, untuk validasi tipe data dan sediakan sebagai object python supaya bisa diimport di file lain

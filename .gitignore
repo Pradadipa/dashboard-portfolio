@@ -25,6 +25,11 @@ build/
 db/backup*
 db/dumps/
 
+# Local data exports / scratch notebooks
+backend/*.csv
+backend/*.ipynb
+.ipynb_checkpoints/
+
 # IDE
 .vscode/
 .idea/
