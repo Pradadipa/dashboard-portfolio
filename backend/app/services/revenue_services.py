@@ -2,7 +2,7 @@ from datetime import date
 from decimal import Decimal
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.schemas.revenue import RevenueSummary
+from app.schemas.revenue import RevenueSummary, RevenueTrendPoint, RevenueTrend, Granularity
 
 async def get_revenue_summary(
         db: AsyncSession,
@@ -54,4 +54,66 @@ async def get_revenue_summary(
         total_orders=total_orders,
         average_order_value=aov.quantize(Decimal('0.01')),  # Round to 2 decimal places
         currency='USD'  # Assuming USD; adjust as necessary
+    )
+
+async def get_revenue_trend(
+        db: AsyncSession,
+        start_date: date,
+        end_date: date,
+        granularity: Granularity,
+) -> RevenueTrend:
+    """
+    Ambil time series revenue untuk chart.
+    
+    Data di-aggregate per hari/minggu/bulan sesuai granularity.
+    Data disusun dari tanggal terlama ke terbaru (untuk chart).
+    
+    Args:
+        db: Async database session
+        start_date: Tanggal mulai (inclusive)
+        end_date: Tanggal akhir (inclusive)
+        granularity: Level agregasi (day/week/month)
+    
+    Returns:
+        RevenueTrend dengan array data_points
+    """
+    # Map granularity ke PostgreSQL date_trunc unit
+    # date_trunc('day', '2026-07-15 10:30') → '2026-07-15 00:00'
+    # date_trunc('week', '2026-07-15') → tanggal Senin di minggu itu
+    # date_trunc('month', '2026-07-15') → '2026-07-01'
+    trunc_unit = granularity.value  # 'day', 'week', atau 'month'
+
+    query = text(f"""
+        SELECT 
+            date_trunc('{trunc_unit}', date_key)::date AS period_start,
+            COALESCE(SUM(amount), 0) AS net_sales,
+            COUNT(DISTINCT CASE WHEN row_type = 'SALE' THEN order_id END) AS orders
+        FROM
+            shopify.v_net_sales_lines
+        WHERE
+            date_key >= :start_date AND
+            date_key <= :end_date
+        GROUP BY period_start
+        ORDER BY period_start ASC
+    """)
+
+    result = await db.execute(query, {"start_date": start_date, "end_date": end_date})
+    rows = result.all() # ambil semua row (bukan .one() lagi karena banyak row)
+
+    # Convert setiap ro ke revenueTrenPoint
+    data_points = [
+        RevenueTrendPoint(
+            date=row.period_start,
+            net_sales=Decimal(row.net_sales).quantize(Decimal("0.01")),
+            orders=row.orders or 0
+        )
+        for row in rows
+    ]
+
+    return RevenueTrend(
+        start_date=start_date,
+        end_date=end_date,
+        granularity=granularity,
+        data_points=data_points,
+        total_points=len(data_points),
     )

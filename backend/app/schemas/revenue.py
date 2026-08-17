@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date as date_type
 from decimal import Decimal
 from pydantic import BaseModel, Field
 from enum import Enum
@@ -11,12 +11,12 @@ class RevenueSummary(BaseModel):
     Semua nilai monetary pakai Decimal untuk presisi (bukan float).
     """
     
-    start_date: date = Field(
+    start_date: date_type = Field(
         ...,
         description="Tanggal mulai periode",
         examples=["2026-07-01"],
     )
-    end_date: date = Field(
+    end_date: date_type = Field(
         ...,
         description="Tanggal akhir periode",
         examples=["2026-07-31"],
@@ -66,7 +66,7 @@ class Granularity(str, Enum):
 class RevenueTrendPoint(BaseModel):
     """Satu data point dalam time series revenue"""
 
-    date: date = Field(
+    date: date_type = Field(
         ...,
         description="Date (for granuralit=day) or start date poeriod (wweek/month)",
         examples=["2026-01-01"],
@@ -85,10 +85,10 @@ class RevenueTrendPoint(BaseModel):
 
 class RevenueTrend(BaseModel):
     """Response schema for revenue trend (time series)"""
-    start_date: date = Field(..., description="Start date period")
-    end_date: date= Field(..., description="End date period")
+    start_date: date_type = Field(..., description="Start date period")
+    end_date: date_type = Field(..., description="End date period")
     granularity: Granularity = Field(..., description="Level aggregation date")
-    date_points: list[RevenueTrendPoint] = Field(
+    data_points: list[RevenueTrendPoint] = Field(
         ...,
         description="Time series data, order by oldest date"
     )
