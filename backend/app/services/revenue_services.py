@@ -180,7 +180,7 @@ async def get_revenue_by_channel(
         row_revenue = Decimal(row.revenue) if row.revenue else Decimal("0") 
 
         if total_revenue > 0:
-            percentage = (row_revenue/total_revenue *100).quantize(Decimal("0"))
+            percentage = (row_revenue/total_revenue *100).quantize(Decimal("0.01"))
         else:
             percentage = Decimal("0.00")
 
