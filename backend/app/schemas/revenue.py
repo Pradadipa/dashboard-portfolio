@@ -97,3 +97,42 @@ class RevenueTrend(BaseModel):
         description="Total data point",
         ge=0,
     )
+
+class ChannelRevenue(BaseModel):
+
+    channel: str = Field(
+        ...,
+        description="Traffic channel name",
+        examples=["Paid Social"]
+    )
+    orders: int = Field(
+        ...,
+        description="Total orders from this channel",
+        ge=0 
+    )
+    revenue: Decimal = Field(
+        ...,
+        description="Total net revenue from this channel"
+    )
+    percentage: Decimal = Field(
+        ...,
+        description="Percentage from total revenue",
+        ge=0,
+        le=100
+    )
+
+class RevenueByChannel(BaseModel):
+    start_date: date_type = Field(..., description="Start period")
+    end_date: date_type = Field(..., description="End period")
+    channel: list[ChannelRevenue] = Field(
+        ...,
+        description="Breakdown per channel, sort by desc"
+    )
+    total_revenue: Decimal = Field(
+        ...,
+        description="Total revenue from all channel"
+    )
+    total_order: int = Field(
+        ...,
+        description="Total order from all channel"
+    )
