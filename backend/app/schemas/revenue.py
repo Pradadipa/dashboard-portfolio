@@ -124,7 +124,7 @@ class ChannelRevenue(BaseModel):
 class RevenueByChannel(BaseModel):
     start_date: date_type = Field(..., description="Start period")
     end_date: date_type = Field(..., description="End period")
-    channel: list[ChannelRevenue] = Field(
+    channels: list[ChannelRevenue] = Field(
         ...,
         description="Breakdown per channel, sort by desc"
     )

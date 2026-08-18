@@ -2,7 +2,14 @@ from datetime import date
 from decimal import Decimal
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.schemas.revenue import RevenueSummary, RevenueTrendPoint, RevenueTrend, Granularity
+from app.schemas.revenue import (
+    RevenueSummary, 
+    RevenueTrendPoint, 
+    RevenueTrend, 
+    Granularity,
+    RevenueByChannel,
+    ChannelRevenue
+    )
 
 async def get_revenue_summary(
         db: AsyncSession,
@@ -116,4 +123,78 @@ async def get_revenue_trend(
         granularity=granularity,
         data_points=data_points,
         total_points=len(data_points),
+    )
+
+async def get_revenue_by_channel(
+        db: AsyncSession,
+        start_date: date,
+        end_date: date,
+        limit: int | None = None,
+) -> RevenueByChannel:
+    """
+    Ambil breakdown revenue per traffic channel.
+    
+    Menggunakan view v_daily_sales_by_channel yang sudah aggregate
+    per (date, channel, source, device). Kita agg lebih lanjut per channel.
+    
+    Args:
+        db: Async database session
+        start_date: Tanggal mulai (inclusive)
+        end_date: Tanggal akhir (inclusive)
+        limit: Batasi jumlah channel (None = semua)
+    
+    Returns:
+        RevenueByChannel dengan array channels sorted by revenue desc
+    """
+    query=text("""
+        SELECT
+            traffic_channel AS channel,
+            SUM(orders) AS orders,
+            SUM(net_revenue) AS revenue
+        FROM shopify.v_daily_sales_by_channel
+        WHERE order_date >= :start_date
+            AND order_date <= :end_date
+        GROUP BY traffic_channel
+        ORDER BY revenue DESC NULLS LAST
+    """)
+
+    result = await db.execute(
+        query,
+        {"start_date":start_date, "end_date": end_date}
+    )
+    rows = result.all()
+
+    if limit is not None:
+        rows_display = rows[:limit]
+    else:
+        rows_display = rows
+
+    total_revenue = sum(
+        (Decimal(row.revenue) if row.revenue else Decimal("0")) for row in rows
+    )
+
+    total_orders = sum(row.orders for row in rows)
+
+    channels = []
+    for row in rows_display:
+        row_revenue = Decimal(row.revenue) if row.revenue else Decimal("0") 
+
+        if total_revenue > 0:
+            percentage = (row_revenue/total_revenue *100).quantize(Decimal("0"))
+        else:
+            percentage = Decimal("0.00")
+
+        channels.append(ChannelRevenue(
+            channel=row.channel or "UNKNOWN",
+            orders=row.orders or 0,
+            revenue=row_revenue.quantize(Decimal("0.01")),
+            percentage=percentage
+        ))
+
+    return RevenueByChannel(
+        start_date=start_date,
+        end_date=end_date,
+        channels=channels,
+        total_revenue=total_revenue.quantize(Decimal("0.01")),
+        total_order=total_orders
     )

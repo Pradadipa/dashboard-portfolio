@@ -3,8 +3,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
-from app.schemas.revenue import RevenueSummary, RevenueTrend, Granularity
-from app.services.revenue_services import get_revenue_summary, get_revenue_trend
+from app.schemas.revenue import RevenueSummary, RevenueTrend, Granularity, RevenueByChannel
+from app.services.revenue_services import (
+    get_revenue_summary, 
+    get_revenue_trend, 
+    get_revenue_by_channel
+)
 
 router =  APIRouter(prefix="/api/revenue", tags=["revenue"])
 
@@ -99,3 +103,51 @@ async def revenue_trend(
             detail=f"Maximum range 2 years (730 days). Your range: {days_diff} days"
         )
     return await get_revenue_trend(db, start_date, end_date, granularity)
+
+@router.get(
+    "/by-channel",
+    response_model=RevenueByChannel,
+    summary="Get revenue breakdown by traffic channel"
+)
+async def revenue_by_channel(
+    start_date: date = Query(
+        default_factory=lambda: date.today() - timedelta(days=30),
+        description="Start poriod"
+    ),
+    end_date: date = Query(
+        default_factory=lambda: date.today(),
+        description="End poriod"
+    ),
+    limit : int | None = Query(
+        default=None,
+        description="Limiting total channel",
+        ge=1,
+        le=50
+    ),
+    db: AsyncSession = Depends(get_db)
+) -> RevenueByChannel:
+    """
+    Get revenue breakdown per traffic channel.
+    
+    Menampilkan kontribusi setiap channel (Paid Social, Organic Search, dll)
+    terhadap total revenue. Cocok untuk pie chart atau bar chart.
+    
+    - **percentage** = share revenue dari total (0-100)
+    - Channels di-sort dari revenue terbesar
+    - Kalau pakai `limit`, total tetap dihitung dari semua channel
+    """
+    
+    if end_date < start_date:
+        raise HTTPException(
+            status_code=400,
+            detail=f"end_date ({end_date}) tidak boleh sebelum start_date ({start_date})",
+        )
+    
+    days_diff = (end_date - start_date).days
+    if days_diff > 730:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Range maksimum 2 tahun (730 hari). Range kamu: {days_diff} hari",
+        )
+    
+    return await get_revenue_by_channel(db, start_date, end_date, limit)
