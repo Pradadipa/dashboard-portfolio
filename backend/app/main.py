@@ -2,9 +2,10 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import revenue
+from app.api import revenue, annotation
 from app.core.config import settings
 from app.db.session import engine
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -41,6 +42,7 @@ app.add_middleware(
 )
 
 app.include_router(revenue.router)
+app.include_router(annotation.router)
 
 @app.get("/", tags=["health"])
 async def root():

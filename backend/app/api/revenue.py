@@ -21,12 +21,12 @@ async def revenue_summary(
     start_date: date = Query(
         default_factory=lambda: date.today() - timedelta(days=30),
         description="Start date period (default: 30 days ago)",
-        example=["2026-07-01"]
+        examples=["2026-07-01"]
     ),
     end_date: date = Query(
             default_factory=lambda: date.today(),
             description="End date period (default: today)",
-            example=["2026-07-31"]
+            examples=["2026-07-31"]
     ),
     db: AsyncSession = Depends(get_db),
 ) -> RevenueSummary:
