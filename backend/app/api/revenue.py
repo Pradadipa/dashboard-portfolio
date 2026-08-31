@@ -19,12 +19,12 @@ router =  APIRouter(prefix="/api/revenue", tags=["revenue"])
 )
 async def revenue_summary(
     start_date: date = Query(
-        default_factory=lambda: date.today() - timedelta(days=30),
+        default=date(2026,1,1),
         description="Start date period (default: 30 days ago)",
         examples=["2026-07-01"]
     ),
     end_date: date = Query(
-            default_factory=lambda: date.today(),
+            default=date(2026,1,31),
             description="End date period (default: today)",
             examples=["2026-07-31"]
     ),
@@ -64,12 +64,12 @@ async def revenue_summary(
 )
 async def revenue_trend(
     start_date: date = Query(
-        default_factory=lambda: date.today() - timedelta(days=30),
+        default=date(2026,1,1),
         description="Start date period (default: 30 days ago)",
         examples=["2026-01-01"]
     ),
     end_date: date = Query(
-        default_factory=lambda: date.today(),
+        default=date(2026,1,31),
         description="End date period",
         examples=["2026-01-31"]
     ),
