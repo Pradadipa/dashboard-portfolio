@@ -10,6 +10,7 @@ import {
     ResponsiveContainer
 } from "recharts"
 
+
 interface TrendPoint {
     date: string;
     net_sales: string;
@@ -30,7 +31,13 @@ interface ChartDataPoint {
     orders: number;
 }
 
-function RevenueTrendChart() {
+interface RevenueTrendChartProps {
+    startDate: string;
+    endDate: string;
+    granularity: string;
+}
+
+function RevenueTrendChart({ startDate, endDate, granularity } : RevenueTrendChartProps) {
     const [data, setData] = useState<ChartDataPoint[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -39,7 +46,14 @@ function RevenueTrendChart() {
         const fetchData = async () => {
             try {
                 const response = await axios.get<RevenueTrend>(
-                    "http://localhost:8000/api/revenue/trend"
+                    "http://localhost:8000/api/revenue/trend",
+                    {
+                        params: {
+                            start_date: startDate,
+                            end_date: endDate,
+                            granularity: granularity
+                        }
+                    }
                 );
             
             const chartData: ChartDataPoint[] = response.data.data_points.map(
@@ -60,7 +74,7 @@ function RevenueTrendChart() {
         };
 
         fetchData();
-    }, []);
+    }, [ startDate, endDate, granularity ]);
 
     if (loading) return <p>Loading Chart ...</p>;
     if (error) return <p>Error: {error}</p>;

@@ -13,7 +13,13 @@ interface RevenueSummary {
     currency: string;
 }
 
-function RevenueSummaryCards() {
+// New props
+interface RevenueSummaryCardsProps {
+    startDate: string;
+    endDate: string;
+}
+
+function RevenueSummaryCards({ startDate, endDate } : RevenueSummaryCardsProps) {
     const [data, setData] = useState<RevenueSummary | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -22,7 +28,13 @@ function RevenueSummaryCards() {
         const fetchData = async () => {
             try {
                 const response =  await axios.get<RevenueSummary>(
-                    "http://localhost:8000/api/revenue/summary"
+                    "http://localhost:8000/api/revenue/summary",
+                    {
+                        params: {
+                            start_date: startDate,
+                            end_date: endDate
+                        }
+                    }
                 );
                 setData(response.data);
             } catch (err) {
@@ -34,7 +46,7 @@ function RevenueSummaryCards() {
         };
 
         fetchData();
-    }, []);
+    }, [startDate, endDate]); // refeth if props change
 
     if (loading) return <p>Loading Summary ...</p>;
     if (error) return <p>Error: {error}</p>;

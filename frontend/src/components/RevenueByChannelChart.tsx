@@ -33,8 +33,14 @@ interface ChartData {
     orders: number;
 }
 
+// Create new props for filter date range
+interface RevenueByChannelChartProps {
+    startDate: string;
+    endDate: string;
+}
+
 // Create main function
-function RevenueByChannelChart() {
+function RevenueByChannelChart({ startDate, endDate }: RevenueByChannelChartProps) {
     const [data, setData] = useState<ChartData[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -43,7 +49,13 @@ function RevenueByChannelChart() {
         const fetchData = async () => {
             try {
                 const response = await axios.get<RevenueByChannel>(
-                    "http://localhost:8000/api/revenue/by-channel"
+                    "http://localhost:8000/api/revenue/by-channel",
+                    {
+                        params: {
+                            start_date: startDate,
+                            end_date: endDate
+                        }
+                    }
                 );
 
                 const chartData: ChartData[] = response.data.channels.map((c) => ({
@@ -62,7 +74,7 @@ function RevenueByChannelChart() {
         };
 
         fetchData();
-    }, []);
+    }, [ startDate, endDate ]);
 
     if (loading) return <p>Loading channel breakdown...</p>;
     if (error) return <p>Error: {error}</p>;
