@@ -81,16 +81,23 @@ function RevenueByChannelChart({ startDate, endDate }: RevenueByChannelChartProp
     if (data.length === 0) return <p>No channel data</p>;
 
     return (
-        <div>
-            <h2>Revenue by Channel</h2>
+        <div className="bg-white p-6 rounded-lg shadow">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Revenue by Channel</h2>
             <ResponsiveContainer width="100%" height={400}>
-                <BarChart data={data} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" />
-                    <YAxis dataKey="channel" type="category" width={150} />
-                    <Tooltip formatter={(value) => `$${Number(value).toLocaleString()}`} />
-                    <Bar dataKey="revenue" fill="#0066cc" name="Revenue" />
-                </BarChart>
+            <BarChart data={data} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis type="number" stroke="#6b7280" />
+                <YAxis dataKey="channel" type="category" width={150} stroke="#6b7280" />
+                <Tooltip 
+                    formatter={(value) => `$${Number(value).toLocaleString()}`}
+                contentStyle={{
+                    backgroundColor: 'white',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                }}
+                />
+                <Bar dataKey="revenue" fill="#1a1a1a" name="Revenue" />
+            </BarChart>
             </ResponsiveContainer>
         </div>
     );

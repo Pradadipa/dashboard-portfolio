@@ -12,24 +12,30 @@ function DateRangePicker({
     onEndDateChange,
 }: DateRangePickerProps) {
     return (
-        <div>
-            <label>
-                Start Date:{" "}
+        <div className="bg-white p-6 rounded-lg shadow flex gap-4 items-end">
+            <div className="flex flex-col">
+                <label className="text-sm font-medium text-gray-700 mb-1">
+                    Start Date
+                </label>
                 <input 
                     type="date"
                     value={startDate} // value from props
                     onChange={(e) => onStartDateChange(e.target.value)} // Callbacck if any change 
+                    className="border border-gray-300 rounder px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 /> 
-            </label>
-            {"  "}
-            <label>
-                End Date: {" "}
+            </div>
+
+            <div className="flex flex-col">
+                <label className="text-sm font-medium text-gray-700 mb-1">
+                    End Date
+                </label>
                 <input 
                     type="date"
                     value={endDate}
                     onChange={(e) => onEndDateChange(e.target.value)}
+                    className="border border-gray-300 rounder px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-            </label>
+            </div>
         </div>
     );
 }

@@ -11,7 +11,7 @@ interface KpiListProps {
 
 function KpiList ({ items } : KpiListProps) {
     return (
-        <ul>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             {items.map((item) => (
                 <KpiCard
                     key={item.label}
@@ -19,7 +19,7 @@ function KpiList ({ items } : KpiListProps) {
                     value={item.value}
                 />
             ))}
-        </ul>
+        </div>
     );
 }
 

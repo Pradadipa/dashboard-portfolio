@@ -21,7 +21,8 @@ function App() {
   const [granularity, setGranularity ] = useState<Granularity>("day");
 
   return (
-    <div>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
       <Header
         title="Business Dashboard"
         subtitle="Real-time revenue metris"
@@ -34,13 +35,14 @@ function App() {
         onEndDateChange={setEndDate}
       />
 
-      <hr />
+
       <RevenueSummaryCards startDate={startDate} endDate={endDate} />
-      <hr />
+
       <GranularitySelector value={granularity} onChange={setGranularity} />
       <RevenueTrendChart startDate={startDate} endDate={endDate} granularity={granularity} />
-      <hr />
+
       <RevenueByChannelChart startDate={startDate} endDate={endDate} />
+    </div>
     </div>
   );
 }

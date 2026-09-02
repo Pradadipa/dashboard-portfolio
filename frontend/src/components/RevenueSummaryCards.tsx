@@ -48,9 +48,9 @@ function RevenueSummaryCards({ startDate, endDate } : RevenueSummaryCardsProps) 
         fetchData();
     }, [startDate, endDate]); // refeth if props change
 
-    if (loading) return <p>Loading Summary ...</p>;
-    if (error) return <p>Error: {error}</p>;
-    if (!data) return <p>No data</p>;
+    if (loading) return <p className="bg-white p-6 rounded-lg shadow text-gray-600">Loading Summary ...</p>;
+    if (error) return <p className="bg-red-50 border border-red-200 p-6 rounded-lg text-red-700">Error: {error}</p>;
+    if (!data) return <p className="bg-white p-6 rounded-lg shadow text-gray-600">No data</p>;
 
     const kpiItems = [
         { label: "Net Sales", value: `$${Number(data.net_sales).toLocaleString()}` },
@@ -61,11 +61,14 @@ function RevenueSummaryCards({ startDate, endDate } : RevenueSummaryCardsProps) 
     ];
 
     return (
-        <div>
-            <h2>Revenue Summary</h2>
-            <p>Period: {data.start_date} to {data.end_date}</p>
+        <div className="bg-white p-6 rounded-lg shadow space-y-4">
+            <div>
+            <h2 className="text-xl font-semibold text-gray-900">Revenue Summary</h2>
+            <p className="text-sm text-gray-600 mt-1">Period: {data.start_date} to {data.end_date}</p>
             <KpiList items={kpiItems} />
         </div>
+        </div>
+        
     );
 }
 
