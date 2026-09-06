@@ -1,6 +1,19 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import KpiList from "./KpiList";
+import {
+  DollarSign,
+  ShoppingCart,
+  RotateCcw,
+  Package,
+  TrendingUp as TrendingUpIcon,
+  icons,
+} from "lucide-react";
+
+interface SparklinePoint {
+    date: string;
+    value: string;
+}
 
 interface RevenueSummary {
     start_date: string;
@@ -11,6 +24,10 @@ interface RevenueSummary {
     total_returns: string;
     average_order_value: string;
     currency: string;
+    net_sales_change_percent: string | null;
+    orders_change_percent: string | null;
+    aov_change_percent: string | null;
+    net_sales_sparkline: SparklinePoint[];
 }
 
 // New props
@@ -52,12 +69,48 @@ function RevenueSummaryCards({ startDate, endDate } : RevenueSummaryCardsProps) 
     if (error) return <p className="bg-red-50 border border-red-200 p-6 rounded-lg text-red-700">Error: {error}</p>;
     if (!data) return <p className="bg-white p-6 rounded-lg shadow text-gray-600">No data</p>;
 
+    // Transform sparkline: string values → number
+    const sparklineData = data.net_sales_sparkline.map((point) => ({
+        value: Number(point.value),
+    }));
+
     const kpiItems = [
-        { label: "Net Sales", value: `$${Number(data.net_sales).toLocaleString()}` },
-        { label: "Total Sales", value: `$${Number(data.total_sales).toLocaleString()}` },
-        { label: "Total Returns", value: `$${Number(data.total_returns).toLocaleString()}` },
-        { label: "Total Orders", value: data.total_orders.toLocaleString() },
-        { label: "AOV", value: `$${Number(data.average_order_value).toLocaleString()}` },
+        { 
+            label: "Net Sales", 
+            value: `$${Number(data.net_sales).toLocaleString()}`,
+            changePercent: data.net_sales_change_percent
+                ? Number(data.net_sales_change_percent)
+                : null,
+            icon: <DollarSign size={20} />,
+            sparklineData:sparklineData,
+            sparklineColor: "#10b981"
+        },
+        { 
+            label: "Total Sales", 
+            value: `$${Number(data.total_sales).toLocaleString()}`,
+            icon: <TrendingUpIcon size={20} />
+        },
+        { 
+            label: "Total Returns", 
+            value: `$${Number(data.total_returns).toLocaleString()}`,
+            icon: <RotateCcw size={20} /> 
+        },
+        { 
+            label: "Total Orders", 
+            value: data.total_orders.toLocaleString(), 
+            changePercent: data.orders_change_percent
+                ? Number(data.orders_change_percent)
+                : null,
+            icon: <ShoppingCart size={20} />
+        },
+        { 
+            label: "AOV", 
+            value: `$${Number(data.average_order_value).toLocaleString()}`,
+            changePercent: data.aov_change_percent
+                ? Number(data.aov_change_percent)
+                : null,
+            icon: <ShoppingCart size={20} />
+        },
     ];
 
     return (

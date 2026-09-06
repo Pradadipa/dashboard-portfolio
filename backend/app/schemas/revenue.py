@@ -3,6 +3,10 @@ from decimal import Decimal
 from pydantic import BaseModel, Field
 from enum import Enum
 
+class SparklinePoint(BaseModel):
+    """One data point for sparkline chart"""
+    date: date_type
+    value: Decimal
 
 class RevenueSummary(BaseModel):
     """
@@ -55,6 +59,28 @@ class RevenueSummary(BaseModel):
         examples=["USD"],
         min_length=3,
         max_length=3,
+    )
+
+    # Comparisson vs previous period
+    net_sales_change_percent: Decimal | None = Field(
+        default=None,
+        description="% change vs pervious period"
+    )
+
+    orders_change_percent: Decimal | None = Field(
+        default=None,
+        description="% change orders vs pervious period"
+    )
+
+    aov_change_percent: Decimal | None = Field(
+        default=None,
+        description="% change AOV vs pervious period"
+    )
+
+    # New: Sparkline data
+    net_sales_sparkline: list[SparklinePoint] = Field(
+        default_factory=list,
+        description="Dialy net sales for sparkline visualization"
     )
 
 class Granularity(str, Enum):

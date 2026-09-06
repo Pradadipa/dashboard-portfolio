@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,7 +8,8 @@ from app.schemas.revenue import (
     RevenueTrend, 
     Granularity,
     RevenueByChannel,
-    ChannelRevenue
+    ChannelRevenue,
+    SparklinePoint
     )
 
 async def get_revenue_summary(
@@ -27,7 +28,8 @@ async def get_revenue_summary(
     Returns:
         RevenueSummary: Summary of revenue metrics.
     """
-    query = text("""
+    # 1. Query current period metrics
+    current_query = text("""
         SELECT
             COALESCE(SUM(CASE WHEN row_type = 'SALE' THEN amount ELSE 0 END), 0) AS total_sales,
             COALESCE(SUM(CASE WHEN row_type = 'RETURN' THEN amount ELSE 0 END), 0) AS total_returns_negative,
@@ -39,18 +41,74 @@ async def get_revenue_summary(
             date_key >= :start_date AND date_key <= :end_date
     """)
 
-    result = await db.execute(query, {'start_date': start_date, 'end_date': end_date})
-    row = result.one()
+    current_result = await db.execute(
+        current_query, 
+        {'start_date': start_date, 'end_date': end_date}
+    )
+    current = current_result.one()
 
+    # 2. Calculate previous period range
+    period_length = (end_date - start_date).days + 1
+    previous_end_date = start_date - timedelta(days=1)
+    previous_start_date = previous_end_date - timedelta(days=period_length-1)
+
+    # 3. Query previous period range
+    previous_result = await db.execute(
+        current_query,
+        {"start_date": previous_start_date, "end_date": previous_end_date}
+    )
+    previous = previous_result.one()
+
+    # 4. Query sparkline data
+    sparkline_query = text("""
+        SELECT
+            date_key AS date,
+            COALESCE(SUM(amount), 0) AS value
+        FROM shopify.v_net_sales_lines
+        WHERE date_key >= :start_date AND date_key <= :end_date
+        GROUP BY date_key
+        ORDER BY date_key ASC
+    """)
+    sparkline_result = await db.execute(
+        sparkline_query,
+        {"start_date": start_date, "end_date": end_date}
+    )
+    sparkline_rows = sparkline_result.all()
+
+    # 5. Calculate values
     # Convert DB to Decimal
-    total_sales = Decimal(row.total_sales)
-    total_returns = abs(Decimal(row.total_returns_negative))  # Ensure refunds are positive
-    net_sales = Decimal(row.net_sales)
-    total_orders = row.total_orders or 0  # Default to 0 if None
+    total_sales = Decimal(current.total_sales)
+    total_returns = abs(Decimal(current.total_returns_negative))  # Ensure refunds are positive
+    net_sales = Decimal(current.net_sales)
+    total_orders = current.total_orders or 0  # Default to 0 if None
 
     # Calculate average order value, handling division by zero
     aov = (net_sales / total_orders) if total_orders > 0 else Decimal('0.00')
 
+    # 6. Calculate percentage changes
+    def calc_change(current_val: Decimal, previous_val: Decimal) -> Decimal | None:
+        """Return % change, or none if previous = 0"""
+        if previous_val == 0:
+            return 0
+        change = ((current_val - previous_val)/previous_val) * 100
+        return change.quantize(Decimal("0.01"))
+
+    previous_net_sales = Decimal(previous.net_sales)
+    previous_orders = previous.total_orders or 0
+    previous_aov = (previous_net_sales/previous_orders) if previous_orders > 0 else Decimal("0.00")
+
+    net_sales_change = calc_change(net_sales, previous_net_sales)
+    orders_change = calc_change(Decimal(total_orders), Decimal(previous_orders))
+    aov_change = calc_change(aov, previous_aov)
+
+    # 7. Build sparkline points
+    sparkline_points = [
+        SparklinePoint(
+            date=row.date,
+            value=Decimal(row.value).quantize(Decimal("0.01"))
+        )
+        for row in sparkline_rows
+    ]
     # Return the revenue summary as a Pydantic model
     return RevenueSummary(
         start_date=start_date,
@@ -60,7 +118,11 @@ async def get_revenue_summary(
         net_sales=net_sales.quantize(Decimal('0.01')),  # Round to 2 decimal places
         total_orders=total_orders,
         average_order_value=aov.quantize(Decimal('0.01')),  # Round to 2 decimal places
-        currency='USD'  # Assuming USD; adjust as necessary
+        currency='USD',  # Assuming USD; adjust as necessary
+        net_sales_change_percent=net_sales_change,
+        orders_change_percent=orders_change,
+        aov_change_percent=aov_change,
+        net_sales_sparkline=sparkline_points
     )
 
 async def get_revenue_trend(
