@@ -1,5 +1,6 @@
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
-import { LineChart, Line, ResponsiveContainer } from "recharts";
+import { ResponsiveContainer } from "recharts";
+import { Area, AreaChart } from 'recharts';
 import type { ReactNode } from "react"
 
 interface SparklineData {
@@ -56,7 +57,7 @@ function KpiCard({
 
             {/* Change indicator */}
             {hasChange ?(
-                <div className={'flex items-center gap-1 text-sm ${changeColor}'}>
+                <div className={`flex items-center gap-1 text-sm ${changeColor}`}>
                     <TrendIcon size={16} />
                     <span className="font-medium">
                         {isPositive && "+"}
@@ -72,15 +73,18 @@ function KpiCard({
             {sparklineData && sparklineData.length > 0 && (
                 <div className="mt-3 h-12">
                     <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={sparklineData}>
-                            <Line
+                        <AreaChart data={sparklineData} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
+                            <Area
                                 type="monotone"
                                 dataKey="value"
                                 stroke={sparklineColor}
                                 strokeWidth={2}
+                                fill={sparklineColor}
+                                fillOpacity={0.15}
                                 dot={false}
+                                isAnimationActive={true}
                             />
-                        </LineChart>
+                        </AreaChart>
                     </ResponsiveContainer>
                 </div>
             )}

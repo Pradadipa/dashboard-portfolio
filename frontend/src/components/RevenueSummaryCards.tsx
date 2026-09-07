@@ -2,12 +2,12 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import KpiList from "./KpiList";
 import {
-  DollarSign,
-  ShoppingCart,
-  RotateCcw,
-  Package,
-  TrendingUp as TrendingUpIcon,
-  icons,
+    DollarSign,
+    ShoppingCart,
+    RotateCcw,
+    Package,
+    TrendingUp as TrendingUpIcon,
+    icons,
 } from "lucide-react";
 
 interface SparklinePoint {
@@ -25,9 +25,15 @@ interface RevenueSummary {
     average_order_value: string;
     currency: string;
     net_sales_change_percent: string | null;
+    total_sales_change_percent: string | null;
+    total_returns_change_percent: string | null;
     orders_change_percent: string | null;
     aov_change_percent: string | null;
     net_sales_sparkline: SparklinePoint[];
+    total_sales_sparkline: SparklinePoint[];
+    total_returns_sparkline: SparklinePoint[];
+    orders_sparkline: SparklinePoint[];
+    aov_sparkline: SparklinePoint[];
 }
 
 // New props
@@ -70,9 +76,8 @@ function RevenueSummaryCards({ startDate, endDate } : RevenueSummaryCardsProps) 
     if (!data) return <p className="bg-white p-6 rounded-lg shadow text-gray-600">No data</p>;
 
     // Transform sparkline: string values → number
-    const sparklineData = data.net_sales_sparkline.map((point) => ({
-        value: Number(point.value),
-    }));
+    const toSparklineData = (points: SparklinePoint[]) =>
+        points.map((p) => ({value:Number(p.value)}));
 
     const kpiItems = [
         { 
@@ -82,18 +87,28 @@ function RevenueSummaryCards({ startDate, endDate } : RevenueSummaryCardsProps) 
                 ? Number(data.net_sales_change_percent)
                 : null,
             icon: <DollarSign size={20} />,
-            sparklineData:sparklineData,
+            sparklineData:toSparklineData(data.net_sales_sparkline),
             sparklineColor: "#10b981"
         },
         { 
             label: "Total Sales", 
             value: `$${Number(data.total_sales).toLocaleString()}`,
-            icon: <TrendingUpIcon size={20} />
+            changePercent: data.total_sales_change_percent
+                ? Number(data.total_sales_change_percent)
+                : null,
+            icon: <TrendingUpIcon size={20} />,
+            sparklineData:toSparklineData(data.total_sales_sparkline),
+            sparklineColor: "#10b981"
         },
         { 
             label: "Total Returns", 
             value: `$${Number(data.total_returns).toLocaleString()}`,
-            icon: <RotateCcw size={20} /> 
+            changePercent: data.total_returns_change_percent
+                ? Number(data.total_returns_change_percent)
+                : null,
+            icon: <RotateCcw size={20} />,
+            sparklineData: toSparklineData(data.total_returns_sparkline),
+            sparklineColor: "#ef4444",  // red
         },
         { 
             label: "Total Orders", 
@@ -101,7 +116,9 @@ function RevenueSummaryCards({ startDate, endDate } : RevenueSummaryCardsProps) 
             changePercent: data.orders_change_percent
                 ? Number(data.orders_change_percent)
                 : null,
-            icon: <ShoppingCart size={20} />
+            icon: <ShoppingCart size={20} />,
+            sparklineData:toSparklineData(data.orders_sparkline),
+            sparklineColor: "#10b981"
         },
         { 
             label: "AOV", 
@@ -109,7 +126,9 @@ function RevenueSummaryCards({ startDate, endDate } : RevenueSummaryCardsProps) 
             changePercent: data.aov_change_percent
                 ? Number(data.aov_change_percent)
                 : null,
-            icon: <ShoppingCart size={20} />
+            icon: <ShoppingCart size={20} />,
+            sparklineData:toSparklineData(data.aov_sparkline),
+            sparklineColor: "#10b981"
         },
     ];
 

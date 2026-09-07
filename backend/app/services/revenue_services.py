@@ -63,7 +63,10 @@ async def get_revenue_summary(
     sparkline_query = text("""
         SELECT
             date_key AS date,
-            COALESCE(SUM(amount), 0) AS value
+            COALESCE(SUM(CASE WHEN row_type = 'SALE' THEN amount ELSE 0 END), 0) AS total_sales,
+            COALESCE(SUM(CASE WHEN row_type = 'RETURN' THEN amount ELSE 0 END), 0) AS total_returns_negative,
+            COALESCE(SUM(amount), 0) AS net_sales,
+            COALESCE(COUNT(DISTINCT CASE WHEN row_type = 'SALE' THEN order_id END), 0) AS total_orders
         FROM shopify.v_net_sales_lines
         WHERE date_key >= :start_date AND date_key <= :end_date
         GROUP BY date_key
@@ -89,23 +92,63 @@ async def get_revenue_summary(
     def calc_change(current_val: Decimal, previous_val: Decimal) -> Decimal | None:
         """Return % change, or none if previous = 0"""
         if previous_val == 0:
-            return 0
+            return None
         change = ((current_val - previous_val)/previous_val) * 100
         return change.quantize(Decimal("0.01"))
 
     previous_net_sales = Decimal(previous.net_sales)
+    previous_total_sales = Decimal(previous.total_sales)
+    previous_total_returns = abs(Decimal(previous.total_returns_negative))
     previous_orders = previous.total_orders or 0
     previous_aov = (previous_net_sales/previous_orders) if previous_orders > 0 else Decimal("0.00")
 
     net_sales_change = calc_change(net_sales, previous_net_sales)
+    total_sales_change = calc_change(total_sales, previous_total_sales)
+    total_return_change = calc_change(total_returns, previous_total_returns)
     orders_change = calc_change(Decimal(total_orders), Decimal(previous_orders))
     aov_change = calc_change(aov, previous_aov)
 
     # 7. Build sparkline points
-    sparkline_points = [
+    net_sales_sparkline = [
         SparklinePoint(
             date=row.date,
-            value=Decimal(row.value).quantize(Decimal("0.01"))
+            value=Decimal(row.net_sales).quantize(Decimal("0.01")),
+        )
+        for row in sparkline_rows
+    ]
+    
+    total_sales_sparkline = [
+        SparklinePoint(
+            date=row.date,
+            value=Decimal(row.total_sales).quantize(Decimal("0.01")),
+        )
+        for row in sparkline_rows
+    ]
+    
+    total_returns_sparkline = [
+        SparklinePoint(
+            date=row.date,
+            value=abs(Decimal(row.total_returns_negative)).quantize(Decimal("0.01")),
+        )
+        for row in sparkline_rows
+    ]
+    
+    orders_sparkline = [
+        SparklinePoint(
+            date=row.date,
+            value=Decimal(row.total_orders or 0),
+        )
+        for row in sparkline_rows
+    ]
+
+    aov_sparkline = [
+        SparklinePoint(
+            date=row.date,
+            value=(
+                Decimal(row.net_sales) / Decimal(row.total_orders)
+                if row.total_orders and row.total_orders > 0
+                else Decimal("0.00")
+            ).quantize(Decimal("0.01")),
         )
         for row in sparkline_rows
     ]
@@ -119,10 +162,18 @@ async def get_revenue_summary(
         total_orders=total_orders,
         average_order_value=aov.quantize(Decimal('0.01')),  # Round to 2 decimal places
         currency='USD',  # Assuming USD; adjust as necessary
+        # Percentage changes
         net_sales_change_percent=net_sales_change,
+        total_sales_change_percent=total_sales_change,            # ← TAMBAH
+        total_returns_change_percent=total_return_change,         # ← TAMBAH (perhatikan nama variable-mu singular)
         orders_change_percent=orders_change,
         aov_change_percent=aov_change,
-        net_sales_sparkline=sparkline_points
+        # Sparklines
+        net_sales_sparkline=net_sales_sparkline,
+        total_sales_sparkline=total_sales_sparkline,
+        total_returns_sparkline=total_returns_sparkline,
+        orders_sparkline=orders_sparkline,
+        aov_sparkline=aov_sparkline,
     )
 
 async def get_revenue_trend(

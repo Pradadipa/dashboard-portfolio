@@ -61,27 +61,21 @@ class RevenueSummary(BaseModel):
         max_length=3,
     )
 
-    # Comparisson vs previous period
-    net_sales_change_percent: Decimal | None = Field(
-        default=None,
-        description="% change vs pervious period"
-    )
+    # Percentage changes (5 field)
+    net_sales_change_percent: Decimal | None = Field(default=None)
+    total_sales_change_percent: Decimal | None = Field(default=None)
+    total_returns_change_percent: Decimal | None = Field(default=None)
+    orders_change_percent: Decimal | None = Field(default=None)
+    aov_change_percent: Decimal | None = Field(default=None)
 
-    orders_change_percent: Decimal | None = Field(
-        default=None,
-        description="% change orders vs pervious period"
-    )
+    # Sparklines (5 field)
+    net_sales_sparkline: list[SparklinePoint] = Field(default_factory=list)
+    total_sales_sparkline: list[SparklinePoint] = Field(default_factory=list)
+    total_returns_sparkline: list[SparklinePoint] = Field(default_factory=list)
+    orders_sparkline: list[SparklinePoint] = Field(default_factory=list)
+    aov_sparkline: list[SparklinePoint] = Field(default_factory=list)
 
-    aov_change_percent: Decimal | None = Field(
-        default=None,
-        description="% change AOV vs pervious period"
-    )
 
-    # New: Sparkline data
-    net_sales_sparkline: list[SparklinePoint] = Field(
-        default_factory=list,
-        description="Dialy net sales for sparkline visualization"
-    )
 
 class Granularity(str, Enum):
     """Level agregasi untuk time series data"""
