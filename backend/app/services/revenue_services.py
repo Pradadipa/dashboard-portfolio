@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 from decimal import Decimal
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,7 +9,9 @@ from app.schemas.revenue import (
     Granularity,
     RevenueByChannel,
     ChannelRevenue,
-    SparklinePoint
+    SparklinePoint,
+    MonthlyRevenue,
+    YearlyRevenueComparison
     )
 
 async def get_revenue_summary(
@@ -260,14 +262,30 @@ async def get_revenue_by_channel(
         RevenueByChannel dengan array channels sorted by revenue desc
     """
     query=text("""
+        WITH channel_totals AS (
+            SELECT
+                traffic_channel AS channel,
+                SUM(orders) AS orders,
+                SUM(net_revenue) AS revenue
+            FROM shopify.v_daily_sales_by_channel
+            WHERE order_date >= :start_date
+                AND order_date <= :end_date
+            GROUP BY traffic_channel
+        ),
+        ranked AS (
+            SELECT
+                channel,
+                orders,
+                revenue,
+                ROW_NUMBER() OVER (ORDER BY revenue DESC NULLS LAST) AS rn
+            FROM channel_totals
+        )
         SELECT
-            traffic_channel AS channel,
+            CASE WHEN rn <= 4 THEN channel ELSE 'Other' END AS channel,
             SUM(orders) AS orders,
-            SUM(net_revenue) AS revenue
-        FROM shopify.v_daily_sales_by_channel
-        WHERE order_date >= :start_date
-            AND order_date <= :end_date
-        GROUP BY traffic_channel
+            SUM(revenue) AS revenue
+        FROM ranked
+        GROUP BY CASE WHEN rn <= 4 THEN channel ELSE 'Other' END
         ORDER BY revenue DESC NULLS LAST
     """)
 
@@ -310,4 +328,84 @@ async def get_revenue_by_channel(
         channels=channels,
         total_revenue=total_revenue.quantize(Decimal("0.01")),
         total_order=total_orders
+    )
+
+async def get_yearly_revenue_comparison(
+        db: AsyncSession
+) -> YearlyRevenueComparison:
+    """
+    Ambil revenue per bulan untuk tahun ini dan tahun lalu.
+    
+    Berguna untuk widget YoY comparison chart.
+    Data yang di-return: 12 bulan × 2 tahun.
+    """
+    current_year = date(2026,1,1).year
+    previous_year = current_year -1
+
+    # Query: aggregate revenue per (year, month)
+    # Cover 2 years: current + previous
+    query = text("""
+        SELECT
+            EXTRACT(YEAR FROM date_key)::int AS year,
+            EXTRACT(MONTH FROM date_key)::int AS month,
+            COALESCE(SUM(amount), 0) AS revenue
+        FROM shopify.v_net_sales_lines
+        WHERE date_key >= make_date(:previous_year,1,1)
+            AND date_key < make_date(:next_year,1,1)
+        GROUP BY year, month
+        ORDER BY year, month
+    """)
+
+    result = await db.execute(
+        query,
+        {
+            "previous_year": previous_year,
+            "next_year": current_year + 1
+        }
+    )
+
+    rows = result.all()
+
+    # Build lookup dict
+    revenue_lookup: dict[tuple[int, int], Decimal] = {}
+    for row in rows:
+        revenue_lookup[(row.year, row.month)] = Decimal(row.revenue)
+
+    # Month labels
+    month_labels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+    # Build response
+    monthly_data = []
+    current_year_total = Decimal("0")
+    previous_year_total = Decimal("0")
+
+    for month_num in range(1,13):
+        current_rev = revenue_lookup.get((current_year, month_num), Decimal("0"))
+        previous_rev = revenue_lookup.get((previous_year, month_num), Decimal("0"))
+
+        monthly_data.append(MonthlyRevenue(
+            month=month_labels[month_num - 1],
+            month_number=month_num,
+            current_year_revenue=current_rev.quantize(Decimal("0.01")),
+            previous_year_revenue=previous_rev.quantize(Decimal("0.01"))
+        ))
+
+        current_year_total += current_rev
+        previous_year_total += previous_rev
+
+        # YoY change
+    yoy_change = None
+    if previous_year_total > 0:
+        yoy_change = (
+            (current_year_total - previous_year_total) / previous_year_total * 100
+        ).quantize(Decimal("0.01"))
+
+    return YearlyRevenueComparison(
+        current_year=current_year,
+        previous_year=previous_year,
+        data=monthly_data,
+        current_year_total=current_year_total.quantize(Decimal("0.01")),
+        previous_year_total=previous_year_total.quantize(Decimal("0.01")),
+        yoy_change_percent=yoy_change,
     )

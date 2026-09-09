@@ -4,6 +4,7 @@ import GranularitySelector, {type Granularity} from "./components/GranularitySel
 import RevenueSummaryCards from "./components/RevenueSummaryCards";
 import RevenueByChannelChart from "./components/RevenueByChannelChart";
 import RevenueTrendChart from "./components/RevenueTrendChart";
+import YearlyRevenueComparison from "./components/YearlyRevenueComparisson";
 import { useState } from "react";
 
 // Helper function
@@ -40,7 +41,7 @@ function App() {
 
       <GranularitySelector value={granularity} onChange={setGranularity} />
       <RevenueTrendChart startDate={startDate} endDate={endDate} granularity={granularity} />
-
+      <YearlyRevenueComparison />
       <RevenueByChannelChart startDate={startDate} endDate={endDate} />
     </div>
     </div>

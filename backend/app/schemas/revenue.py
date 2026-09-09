@@ -75,8 +75,6 @@ class RevenueSummary(BaseModel):
     orders_sparkline: list[SparklinePoint] = Field(default_factory=list)
     aov_sparkline: list[SparklinePoint] = Field(default_factory=list)
 
-
-
 class Granularity(str, Enum):
     """Level agregasi untuk time series data"""
     DAY = "day"
@@ -155,4 +153,45 @@ class RevenueByChannel(BaseModel):
     total_order: int = Field(
         ...,
         description="Total order from all channel"
+    )
+
+class MonthlyRevenue(BaseModel):
+    """Revenue satu bulan dengan perbandingan tahun lalu."""
+
+    month: str = Field(
+        ...,
+        description="Nama bulan pendek",
+        examples=["Jan"]
+    )
+    month_number: int = Field(
+        ...,
+        description="Nomor bulan",
+        ge=1,
+        le=12 
+    )
+    current_year_revenue: Decimal = Field(
+        ...,
+        description="Revenue di bulan ini tahun ini",
+        ge=0,
+    )
+    previous_year_revenue: Decimal = Field(
+        ...,
+        description="Revenue di bulan ini tahun lalu",
+        ge=0,
+    )
+
+class YearlyRevenueComparison(BaseModel):
+    """Response schema untuk yearly revenue comparison widget."""
+    
+    current_year: int = Field(..., description="Tahun sekarang")
+    previous_year: int = Field(..., description="Tahun lalu")
+    data: list[MonthlyRevenue] = Field(
+        ...,
+        description="Data revenue per bulan (12 entries)",
+    )
+    current_year_total: Decimal = Field(..., ge=0)
+    previous_year_total: Decimal = Field(..., ge=0)
+    yoy_change_percent: Decimal | None = Field(
+        default=None,
+        description="% change YoY (null kalau previous year = 0)",
     )

@@ -3,11 +3,18 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
-from app.schemas.revenue import RevenueSummary, RevenueTrend, Granularity, RevenueByChannel
+from app.schemas.revenue import ( 
+    RevenueSummary, 
+    RevenueTrend, 
+    Granularity, 
+    RevenueByChannel,
+    YearlyRevenueComparison
+)
 from app.services.revenue_services import (
     get_revenue_summary, 
     get_revenue_trend, 
-    get_revenue_by_channel
+    get_revenue_by_channel,
+    get_yearly_revenue_comparison
 )
 
 router =  APIRouter(prefix="/api/revenue", tags=["revenue"])
@@ -151,3 +158,19 @@ async def revenue_by_channel(
         )
     
     return await get_revenue_by_channel(db, start_date, end_date, limit)
+
+@router.get(
+    "/yearly-comparison",
+    response_model=YearlyRevenueComparison,
+    summary="Get yearly revenue comparison (current vs previous year)",
+)
+async def revenue_yearly_comparison(
+    db: AsyncSession = Depends(get_db),
+) -> YearlyRevenueComparison:
+    """
+    Get revenue per bulan untuk 2 tahun (current + previous).
+    
+    Widget ini standalone — tidak ikut filter date range.
+    Cocok untuk visualisasi Year-over-Year (YoY) comparison.
+    """
+    return await get_yearly_revenue_comparison(db)

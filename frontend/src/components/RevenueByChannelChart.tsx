@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import {
-    BarChart,
-    Bar,
-    XAxis,
-    YAxis,
     Tooltip,
-    CartesianGrid,
+    Pie,
+    PieChart,
     ResponsiveContainer,
+    Cell,
+    Legend,
 } from "recharts";
+
 
 // Create interface data from API
 interface ChannelRevenue {
@@ -38,6 +38,18 @@ interface RevenueByChannelChartProps {
     startDate: string;
     endDate: string;
 }
+
+// Color palette untuk slices
+const COLORS = [
+  "#3b82f6",  // blue
+  "#10b981",  // green
+  "#f59e0b",  // amber
+  "#ef4444",  // red
+  "#8b5cf6",  // purple
+  "#ec4899",  // pink
+  "#14b8a6",  // teal
+  "#f97316",  // orange
+];
 
 // Create main function
 function RevenueByChannelChart({ startDate, endDate }: RevenueByChannelChartProps) {
@@ -79,27 +91,60 @@ function RevenueByChannelChart({ startDate, endDate }: RevenueByChannelChartProp
     if (loading) return <p>Loading channel breakdown...</p>;
     if (error) return <p>Error: {error}</p>;
     if (data.length === 0) return <p>No channel data</p>;
+    // Hitung total revenue dari data
+    const totalRevenue = data.reduce((sum, item) => sum + item.revenue, 0);
 
     return (
-        <div className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Revenue by Channel</h2>
-            <ResponsiveContainer width="100%" height={400}>
-            <BarChart data={data} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis type="number" stroke="#6b7280" />
-                <YAxis dataKey="channel" type="category" width={150} stroke="#6b7280" />
-                <Tooltip 
-                    formatter={(value) => `$${Number(value).toLocaleString()}`}
-                contentStyle={{
-                    backgroundColor: 'white',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                }}
+    <div className="bg-white p-6 rounded-lg shadow">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">
+        Revenue by Channel
+        </h2>
+
+        {/* Container relative untuk positioning center overlay */}
+        <div className="relative">
+        <ResponsiveContainer width="100%" height={400}>
+            <PieChart>
+            <Pie
+                data={data}
+                dataKey="revenue"
+                nameKey="channel"
+                innerRadius={80}
+                outerRadius={140}
+                paddingAngle={2}
+                cornerRadius={4}
+            >
+                {data.map((_, index) => (
+                <Cell
+                    key={`cell-${index}`}
+                    fill={COLORS[index % COLORS.length]}
                 />
-                <Bar dataKey="revenue" fill="#1a1a1a" name="Revenue" />
-            </BarChart>
-            </ResponsiveContainer>
+                ))}
+            </Pie>
+            <Tooltip
+                formatter={(value) => `$${Number(value).toLocaleString()}`}
+                contentStyle={{
+                backgroundColor: "white",
+                border: "1px solid #e5e7eb",
+                borderRadius: "8px",
+                }}
+            />
+            <Legend
+                layout="horizontal"
+                align="center"
+                verticalAlign="bottom"
+            />
+            </PieChart>
+        </ResponsiveContainer>
+
+        {/* Center overlay */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+            <p className="text-sm text-gray-500 font-medium">Total Revenue</p>
+            <p className="text-2xl font-bold text-gray-900 mt-1">
+            ${totalRevenue.toLocaleString()}
+            </p>
         </div>
+        </div>
+    </div>
     );
 }
 
