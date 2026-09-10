@@ -92,23 +92,27 @@ function YearlyRevenueComparison() {
 
     return (
         <div className="bg-white p-6 rounded-lg shadow">
-        {/* Header dengan title dan YoY badge */}
-        <div className="flex items-start justify-between mb-4">
-            <div>
-            <h2 className="text-xl font-semibold text-gray-900">
-                Yearly Revenue Comparison
-            </h2>
-            <p className="text-sm text-gray-600 mt-1">
-                {data.previous_year} vs {data.current_year}
+        {/* Header: Label */}
+        <div className="mb-6">
+                <h2 className="text-xl font-semibold text-gray-900">
+                    Revenue Overview 
+                </h2>
+
+            {/* Big Value */}
+            <h3>Total Net Sales</h3>
+            <p className="text-2xl font-bold text-gray-900 mb-2">
+                ${Number(data.current_year_total).toLocaleString()}
             </p>
-            </div>
 
             {yoyChange !== null && (
             <div className={`flex items-center gap-1 text-sm ${trendColor} font-medium`}>
                 <TrendIcon size={16} />
                 <span>
-                {isPositive && "+"}
-                {yoyChange}% YoY
+                    {isPositive && "+"}
+                    {yoyChange}% YoY
+                </span>
+                <span className="text-gray-500">
+                    vs {data.previous_year}
                 </span>
             </div>
             )}
