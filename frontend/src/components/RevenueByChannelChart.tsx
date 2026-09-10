@@ -6,7 +6,6 @@ import {
     PieChart,
     ResponsiveContainer,
     Cell,
-    Legend,
 } from "recharts";
 
 

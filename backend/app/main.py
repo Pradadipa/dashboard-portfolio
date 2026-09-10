@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import revenue, annotation
+from app.api import revenue, annotation, product
 from app.core.config import settings
 from app.db.session import engine
 
@@ -43,6 +43,7 @@ app.add_middleware(
 
 app.include_router(revenue.router)
 app.include_router(annotation.router)
+app.include_router(product.router)
 
 @app.get("/", tags=["health"])
 async def root():

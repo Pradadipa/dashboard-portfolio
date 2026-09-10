@@ -5,6 +5,7 @@ import RevenueSummaryCards from "./components/RevenueSummaryCards";
 import RevenueByChannelChart from "./components/RevenueByChannelChart";
 import RevenueTrendChart from "./components/RevenueTrendChart";
 import YearlyRevenueComparison from "./components/YearlyRevenueComparisson";
+import TopProductsWidget from "./components/TopProductsWidget";
 import { useState } from "react";
 
 // Helper function
@@ -41,8 +42,11 @@ function App() {
 
       <GranularitySelector value={granularity} onChange={setGranularity} />
       <RevenueTrendChart startDate={startDate} endDate={endDate} granularity={granularity} />
-      <YearlyRevenueComparison />
-      <RevenueByChannelChart startDate={startDate} endDate={endDate} />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <YearlyRevenueComparison />
+        <RevenueByChannelChart startDate={startDate} endDate={endDate} />
+      </div>
+      <TopProductsWidget startDate={startDate} endDate={endDate} />
     </div>
     </div>
   );
