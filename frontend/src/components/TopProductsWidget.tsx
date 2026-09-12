@@ -82,11 +82,11 @@ function TopProductsWidget({ startDate, endDate }: TopProductWidgetProps) {
         );
     
     return (
-        <div className="bg-white p-6 rounded-lg shadow">
+        <div className="bg-white">
             {/* Header */}
-            <div className="mb-4">
-                <h2 className="text-xl font-semibold text-gray-900">Top Products</h2>
-                <p className="text-sm text-gray-600 mt-1">
+            <div className="mb-2">
+                <h2 className="text-sm font-semibold text-gray-900">Top Products</h2>
+                <p className="text-xs text-gray-600">
                     Best performance by revenue
                 </p>
             </div>
@@ -96,21 +96,21 @@ function TopProductsWidget({ startDate, endDate }: TopProductWidgetProps) {
                 <table className="w-full">
                     <thead>
                         <tr className="border-b border-gray-200">
-                            <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wide py-3 pr-4 w-12">
+                            <th className="text-left text-[10px] font-medium text-gray-500 uppercase tracking-wide py-1 pr-4 w-12">
                                 Rank
                             </th>
-                            <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wide py-3 pr-4">
+                            <th className="text-left text-[10px] font-medium text-gray-500 uppercase tracking-wide py-1 pr-4">
                                 Product
                             </th>
-                            <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wide py-3 pr-4">
+                            <th className="text-left text-[10px] font-medium text-gray-500 uppercase tracking-wide py-1 pr-4">
                                 Revenue
                             </th>
-                            <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wide py-3 pr-4">
+                            <th className="text-left text-[10px] font-medium text-gray-500 uppercase tracking-wide py-1 pr-4">
                                 Units
                             </th>
-                            <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wide py-3 pr-24">
+                            {/* <th className="text-left text-[10px] font-medium text-gray-500 uppercase tracking-wide py-1 pr-24">
                                 Trend
-                            </th>
+                            </th> */}
                         </tr>
                     </thead>
                     <tbody>
@@ -126,36 +126,36 @@ function TopProductsWidget({ startDate, endDate }: TopProductWidgetProps) {
                                     className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
                                 >
                                     {/* Rank */}
-                                    <td className="py-3 pr-4">
-                                        <span className="text-sm font-semibold text-gray-500">
+                                    <td className="py-1 pr-4">
+                                        <span className="text-xs font-semibold text-gray-500">
                                             #{product.rank}
                                         </span>
                                     </td>
 
                                     {/* Product Name */}
-                                    <td className="py-3 pr-4">
-                                        <span className="text-sm font-semibold text-gray-500">
+                                    <td className="py-1 pr-4">
+                                        <span className="text-xs font-semibold text-gray-500">
                                             {product.product_name}
                                         </span>
                                     </td>
 
                                     {/* Revenue */}
-                                    <td className="py-3 pr-4">
-                                        <span className="text-sm font-semibold text-gray-500">
+                                    <td className="py-1 pr-4">
+                                        <span className="text-xs font-semibold text-gray-500">
                                             ${Number(product.revenue).toLocaleString()}
                                         </span>
                                     </td>
 
                                     {/* Units */}
-                                    <td className="py-3 pr-4">
-                                        <span className="text-sm font-semibold text-gray-500">
+                                    <td className="py-1 pr-4">
+                                        <span className="text-xs font-semibold text-gray-500">
                                             {product.units_sold.toLocaleString()}
                                         </span>
                                     </td>
 
-                                    {/* Sparkline */}
-                                    <td className="py-3">
-                                        <div className="h-8 w-24">
+                                    {/* Sparkline
+                                    <td className="py-1">
+                                        <div className="h-6 w-20">
                                             {sparklineData.length > 0 && (
                                                 <ResponsiveContainer width="100%" height="100%">
                                                     <LineChart data={sparklineData}>
@@ -170,7 +170,7 @@ function TopProductsWidget({ startDate, endDate }: TopProductWidgetProps) {
                                                 </ResponsiveContainer>
                                             )}
                                         </div>
-                                    </td>
+                                    </td> */}
                                 </tr>
                             );
                         })}

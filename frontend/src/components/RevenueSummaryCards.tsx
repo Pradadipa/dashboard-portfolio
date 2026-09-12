@@ -86,7 +86,7 @@ function RevenueSummaryCards({ startDate, endDate } : RevenueSummaryCardsProps) 
             changePercent: data.net_sales_change_percent
                 ? Number(data.net_sales_change_percent)
                 : null,
-            icon: <DollarSign size={20} />,
+            icon: <DollarSign size={14} />,
             sparklineData:toSparklineData(data.net_sales_sparkline),
             sparklineColor: "#10b981"
         },
@@ -96,7 +96,7 @@ function RevenueSummaryCards({ startDate, endDate } : RevenueSummaryCardsProps) 
             changePercent: data.total_sales_change_percent
                 ? Number(data.total_sales_change_percent)
                 : null,
-            icon: <TrendingUpIcon size={20} />,
+            icon: <TrendingUpIcon size={14} />,
             sparklineData:toSparklineData(data.total_sales_sparkline),
             sparklineColor: "#10b981"
         },
@@ -106,7 +106,7 @@ function RevenueSummaryCards({ startDate, endDate } : RevenueSummaryCardsProps) 
             changePercent: data.total_returns_change_percent
                 ? Number(data.total_returns_change_percent)
                 : null,
-            icon: <RotateCcw size={20} />,
+            icon: <RotateCcw size={14} />,
             sparklineData: toSparklineData(data.total_returns_sparkline),
             sparklineColor: "#ef4444",  // red
         },
@@ -116,7 +116,7 @@ function RevenueSummaryCards({ startDate, endDate } : RevenueSummaryCardsProps) 
             changePercent: data.orders_change_percent
                 ? Number(data.orders_change_percent)
                 : null,
-            icon: <ShoppingCart size={20} />,
+            icon: <ShoppingCart size={14} />,
             sparklineData:toSparklineData(data.orders_sparkline),
             sparklineColor: "#10b981"
         },
@@ -126,21 +126,16 @@ function RevenueSummaryCards({ startDate, endDate } : RevenueSummaryCardsProps) 
             changePercent: data.aov_change_percent
                 ? Number(data.aov_change_percent)
                 : null,
-            icon: <ShoppingCart size={20} />,
+            icon: <ShoppingCart size={14} />,
             sparklineData:toSparklineData(data.aov_sparkline),
             sparklineColor: "#10b981"
         },
     ];
 
     return (
-        <div className="bg-white p-6 rounded-lg shadow space-y-4">
-            <div>
-            <h2 className="text-xl font-semibold text-gray-900">Revenue Summary</h2>
-            <p className="text-sm text-gray-600 mt-1">Period: {data.start_date} to {data.end_date}</p>
+        <div className="bg-white p-3 rounded-lg shadow">
             <KpiList items={kpiItems} />
         </div>
-        </div>
-        
     );
 }
 

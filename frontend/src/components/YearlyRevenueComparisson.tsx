@@ -91,22 +91,21 @@ function YearlyRevenueComparison() {
         : "text-gray-500";
 
     return (
-        <div className="bg-white p-6 rounded-lg shadow">
+        <div className="bg-white p-3 rounded-lg shadow h-full flex flex-col min-h-0">
         {/* Header: Label */}
-        <div className="mb-6">
-                <h2 className="text-xl font-semibold text-gray-900">
-                    Revenue Overview 
+        <div className="mb-1 flex-none">
+                <h2 className="text-sm font-semibold text-gray-900">
+                    Monthly Revenue
                 </h2>
 
             {/* Big Value */}
-            <h3>Total Net Sales</h3>
-            <p className="text-2xl font-bold text-gray-900 mb-2">
+            <p className="text-lg font-bold text-gray-900">
                 ${Number(data.current_year_total).toLocaleString()}
             </p>
 
             {yoyChange !== null && (
-            <div className={`flex items-center gap-1 text-sm ${trendColor} font-medium`}>
-                <TrendIcon size={16} />
+            <div className={`flex items-center gap-1 text-xs ${trendColor} font-medium`}>
+                <TrendIcon size={12} />
                 <span>
                     {isPositive && "+"}
                     {yoyChange}% YoY
@@ -119,12 +118,15 @@ function YearlyRevenueComparison() {
         </div>
 
         {/* Bar chart */}
-        <ResponsiveContainer width="100%" height={350}>
-            <BarChart data={chartData}>
+        <div className="flex-1 min-h-0">
+        <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-            <XAxis dataKey="month" stroke="#6b7280" />
+            <XAxis dataKey="month" stroke="#6b7280" tick={{ fontSize: 10 }} />
             <YAxis
                 stroke="#6b7280"
+                tick={{ fontSize: 10 }}
+                width={36}
                 tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
             />
             <Tooltip
@@ -133,9 +135,10 @@ function YearlyRevenueComparison() {
                 backgroundColor: "white",
                 border: "1px solid #e5e7eb",
                 borderRadius: "8px",
+                fontSize: 12,
                 }}
             />
-            <Legend />
+            <Legend verticalAlign="top" align="right" wrapperStyle={{ fontSize: 10 }} height={16} iconSize={8} />
             <Bar
                 dataKey="previousYear"
                 fill="#777777"
@@ -151,6 +154,7 @@ function YearlyRevenueComparison() {
             />
             </BarChart>
         </ResponsiveContainer>
+        </div>
         </div>
     );
 }
