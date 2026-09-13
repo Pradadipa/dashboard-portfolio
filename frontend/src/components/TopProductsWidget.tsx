@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { LineChart, Line, ResponsiveContainer } from "recharts";
+// import { LineChart, Line, ResponsiveContainer } from "recharts";
 
 
 interface SparklinePoint {
@@ -116,9 +116,9 @@ function TopProductsWidget({ startDate, endDate }: TopProductWidgetProps) {
                     <tbody>
                         {data.products.map((product) => {
                             // Transform sparkline data untuk chart
-                            const sparklineData = product.sparkline.map((p) => ({
-                                value: Number(p.revenue)
-                            }));
+                            // const sparklineData = product.sparkline.map((p) => ({
+                            //     value: Number(p.revenue)
+                            // }));
 
                             return (
                                 <tr
