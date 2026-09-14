@@ -1,4 +1,5 @@
 from datetime import date, timedelta, datetime
+from dateutil.relativedelta import relativedelta
 from decimal import Decimal
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,6 +14,16 @@ from app.schemas.revenue import (
     MonthlyRevenue,
     YearlyRevenueComparison
     )
+
+def calc_change_percent(current: Decimal, previous: Decimal) -> Decimal | None:
+    """
+    Hitung % change vs previous.
+    Return None kalau previous = 0 (tidak bisa hitung growth).
+    """
+    if previous == 0:
+        return None
+    change = ((current - previous) / previous) * 100
+    return change.quantize(Decimal("0.01"))
 
 async def get_revenue_summary(
         db: AsyncSession,
@@ -203,41 +214,119 @@ async def get_revenue_trend(
     # date_trunc('day', '2026-07-15 10:30') → '2026-07-15 00:00'
     # date_trunc('week', '2026-07-15') → tanggal Senin di minggu itu
     # date_trunc('month', '2026-07-15') → '2026-07-01'
-    trunc_unit = granularity.value  # 'day', 'week', atau 'month'
+    
+    # Step 1: Hitung previous period
+    previous_start = start_date - relativedelta(years=1)
+    previous_end = end_date - relativedelta(years=1)
 
+    # Step 2: Mapping granularity ke PostgreSQL date_trunc unit
+    trunc_unit_map = {
+        Granularity.DAY: "day",
+        Granularity.WEEK: "week",
+        Granularity.MONTH: "month"
+    }
+    trunc_unit = trunc_unit_map[granularity]
+
+    # Step 3: Query template
     query = text(f"""
-        SELECT 
-            date_trunc('{trunc_unit}', date_key)::date AS period_start,
+        SELECT
+            date_trunc('{trunc_unit}', date_key)::date AS period_date,
             COALESCE(SUM(amount), 0) AS net_sales,
             COUNT(DISTINCT CASE WHEN row_type = 'SALE' THEN order_id END) AS orders
-        FROM
-            shopify.v_net_sales_lines
-        WHERE
-            date_key >= :start_date AND
-            date_key <= :end_date
-        GROUP BY period_start
-        ORDER BY period_start ASC
+        FROM shopify.v_net_sales_lines
+        WHERE date_key >= :start_date AND date_key <= :end_date
+        GROUP BY period_date
+        ORDER BY period_date ASC
     """)
 
-    result = await db.execute(query, {"start_date": start_date, "end_date": end_date})
-    rows = result.all() # ambil semua row (bukan .one() lagi karena banyak row)
+    # Step 4: Query current period
+    current_result = await db.execute(
+        query,
+        {"start_date": start_date, "end_date": end_date}
+    )
+    current_rows = current_result.all()
 
-    # Convert setiap ro ke revenueTrenPoint
-    data_points = [
-        RevenueTrendPoint(
-            date=row.period_start,
-            net_sales=Decimal(row.net_sales).quantize(Decimal("0.01")),
-            orders=row.orders or 0
+    # Step 5: Query previous period
+    previous_result = await db.execute(
+        query,
+        {"start_date": previous_start, "end_date": previous_end}
+    )
+    previous_rows = previous_result.all()
+
+    # Step 6: Build lookup
+    previous_lookup: dict[tuple[int, int], dict] = {}
+    for row in previous_rows:
+        key = (row.period_date.month, row.period_date.day)
+        previous_lookup[key] = {
+            "net_sales": Decimal(row.net_sales),
+            "orders": int(row.orders or 0)
+        }
+
+    # Step 7: Merge current and previous
+    data_points = []
+    current_total_net_sales = Decimal("0")
+    previous_total_net_sales = Decimal("0")
+    current_total_orders = 0
+    previous_total_orders = 0
+    for row in current_rows:
+        current_date = row.period_date
+        key = (current_date.month, current_date.day)
+
+        current_net_sales = Decimal(row.net_sales)
+        current_orders = int(row.orders or 0)
+
+        previous_data = previous_lookup.get(key, {
+            "net_sales": Decimal("0"),
+            "orders": 0,
+        })
+        previous_net_sales = previous_data["net_sales"]
+        previous_orders = previous_data["orders"]
+
+        # Calc change per point
+        net_sales_change = calc_change_percent(current_net_sales, previous_net_sales)
+        orders_change = calc_change_percent(
+            Decimal(current_orders),
+            Decimal(previous_orders),
         )
-        for row in rows
-    ]
+        
+        data_points.append(RevenueTrendPoint(
+            date=current_date,
+            current_net_sales=current_net_sales.quantize(Decimal("0.01")),
+            current_orders=current_orders,
+            previous_net_sales=previous_net_sales.quantize(Decimal("0.01")),
+            previous_orders=previous_orders,
+            net_sales_change_percent=net_sales_change,
+            orders_change_percent=orders_change,
+        ))
 
+        # Accumulate totals
+        current_total_net_sales += current_net_sales
+        previous_total_net_sales += previous_net_sales
+        current_total_orders += current_orders
+        previous_total_orders += previous_orders
+
+    # Step 7: Calc overall change
+    overall_net_sales_change = calc_change_percent(
+        current_total_net_sales,
+        previous_total_net_sales,
+    )
+    overall_orders_change = calc_change_percent(
+        Decimal(current_total_orders),
+        Decimal(previous_total_orders),
+    )
+    
     return RevenueTrend(
         start_date=start_date,
         end_date=end_date,
         granularity=granularity,
         data_points=data_points,
         total_points=len(data_points),
+        current_total_net_sales=current_total_net_sales.quantize(Decimal("0.01")),
+        previous_total_net_sales=previous_total_net_sales.quantize(Decimal("0.01")),
+        current_total_orders=current_total_orders,
+        previous_total_orders=previous_total_orders,
+        net_sales_change_percent=overall_net_sales_change,
+        orders_change_percent=overall_orders_change,
     )
 
 async def get_revenue_by_channel(

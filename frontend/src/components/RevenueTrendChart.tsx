@@ -81,23 +81,25 @@ function RevenueTrendChart({ startDate, endDate, granularity } : RevenueTrendCha
     if (data.length === 0) return <div className="bg-white p-6 rounded-lg shadow text-gray-600">No data available</div>;
 
     return (
-        <div className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Revenue Trend</h2>
-            <ResponsiveContainer width="100%" height={400}>
-                <LineChart data={data}>
+        <div className="bg-white p-3 rounded-lg shadow h-full flex flex-col min-h-0">
+            <h2 className="text-sm font-semibold text-gray-900 mb-1 flex-none">Revenue Trend</h2>
+            <div className="flex-1 min-h-0">
+            <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0"/>
-                    <XAxis dataKey="date" />
-                    <YAxis />
-                    <Tooltip contentStyle={{backgroundColor: 'white', border: '0.5px solid #dfdbdb', borderRadius: '8px'}} />
+                    <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                    <YAxis tick={{ fontSize: 10 }} width={40} />
+                    <Tooltip contentStyle={{backgroundColor: 'white', border: '0.5px solid #dfdbdb', borderRadius: '8px', fontSize: 12}} />
                     <Line
                         type="monotone"
                         dataKey="netSales"
-                        stroke="#1a1a1a"
+                        stroke="#3b82f6"
                         strokeWidth={2}
                         name="Net Sales"
                     />
                 </LineChart>
             </ResponsiveContainer>
+            </div>
         </div>
     );
 }

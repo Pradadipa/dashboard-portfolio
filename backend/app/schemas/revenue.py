@@ -89,16 +89,36 @@ class RevenueTrendPoint(BaseModel):
         description="Date (for granuralit=day) or start date poeriod (wweek/month)",
         examples=["2026-01-01"],
     )
-    net_sales: Decimal = Field(
+    current_net_sales: Decimal = Field(
         ...,
-        description="Net sales for this period",
+        description="Net sales for current period",
         examples=["5200.00"],
     )
-    orders: int = Field(
+    current_orders: int = Field(
         ...,
-        description="Total orders for this period",
+        description="Total orders for current period",
         ge=0,
         examples=[45]
+    )
+    previous_net_sales: Decimal = Field(
+        ...,
+        description="Net sales pada tanggal yang sama, 1 tahun sebelumnya (YoY)",
+        examples=["5200.00"],
+    )
+    previous_orders: int = Field(
+        ...,
+        description="Orders count pada tanggal yang sama, 1 tahun sebelumnya",
+        ge=0,
+        examples=[45]
+    )
+    # NEW: Change per point
+    net_sales_change_percent: Decimal | None = Field(
+        default=None,
+        description="% change YoY untuk net sales (null kalau previous = 0)",
+    )
+    orders_change_percent: Decimal | None = Field(
+        default=None,
+        description="% change YoY untuk orders (null kalau previous = 0)",
     )
 
 class RevenueTrend(BaseModel):
@@ -114,6 +134,33 @@ class RevenueTrend(BaseModel):
         ...,
         description="Total data point",
         ge=0,
+    )
+    # NEW: Overall metrics (agregasi seluruh periode)
+    current_total_net_sales: Decimal = Field(
+        ...,
+        description="Total net sales periode current",
+    )
+    previous_total_net_sales: Decimal = Field(
+        ...,
+        description="Total net sales periode previous (YoY)",
+    )
+    current_total_orders: int = Field(
+        ...,
+        description="Total orders periode current",
+        ge=0,
+    )
+    previous_total_orders: int = Field(
+        ...,
+        description="Total orders periode previous (YoY)",
+        ge=0,
+    )
+    net_sales_change_percent: Decimal | None = Field(
+        default=None,
+        description="Overall % change net sales YoY",
+    )
+    orders_change_percent: Decimal | None = Field(
+        default=None,
+        description="Overall % change orders YoY",
     )
 
 class ChannelRevenue(BaseModel):

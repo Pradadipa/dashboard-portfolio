@@ -100,23 +100,23 @@ function RevenueByChannelChart({ startDate, endDate }: RevenueByChannelChartProp
     }));
 
     return (
-    <div className="bg-white p-6 rounded-lg shadow">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">
+    <div className="bg-white p-3 rounded-lg shadow h-full flex flex-col min-h-0">
+        <h2 className="text-sm font-semibold text-gray-900 mb-1 flex-none">
             Revenue by Channel
         </h2>
 
         {/* Grid: donut kiri, table kanan */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
+        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 gap-3 items-center">
             {/* Donut chart */}
-            <div className="relative">
-                <ResponsiveContainer width="100%" height={400}>
+            <div className="relative h-full min-h-0">
+                <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                     <Pie
                         data={data}
                         dataKey="revenue"
                         nameKey="channel"
-                        innerRadius={80}
-                        outerRadius={140}
+                        innerRadius={35}
+                        outerRadius={55}
                         paddingAngle={2}
                         cornerRadius={4}
                     >
@@ -140,35 +140,35 @@ function RevenueByChannelChart({ startDate, endDate }: RevenueByChannelChartProp
 
                 {/* Center overlay */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <p className="text-xl font-bold text-gray-900">
+                    <p className="text-sm font-bold text-gray-900">
                         ${totalRevenue.toLocaleString()}
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">Total Revenue</p>
+                    <p className="text-[10px] text-gray-500">Total Revenue</p>
                 </div>
             </div>
                 {/* Legend table */}
-                <div>
+                <div className="h-full min-h-0 overflow-y-auto">
                     {dataWithPercentage.map((item, index) => (
                         <div
                             key={item.channel}
-                            className="flex items-center justify-between gap-4 py-2">
+                            className="flex items-center justify-between gap-2 py-1">
                                 {/* Color dot + name */}
-                                <div className="flex items-center gap-3 min-w-0 flex-1">
+                                <div className="flex items-center gap-2 min-w-0 flex-1">
                                     <div
-                                        className="w-3 h-3 rounded-full flex-shrink-0"
+                                        className="w-2 h-2 rounded-full flex-shrink-0"
                                         style={{ backgroundColor: COLORS[index % COLORS.length]}}
                                         />
-                                    <span className="text-sm text-gray-700 truncate">
+                                    <span className="text-xs text-gray-700 truncate">
                                         {item.channel}
                                     </span>
                                 </div>
 
                                 {/* Value + percentage */}
-                                <div className="flex items-center gap-4 flex-shrink-0">
-                                    <span className="text-sm font-medium text-gray-900">
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                    <span className="text-xs font-medium text-gray-900">
                                         ${item.revenue.toLocaleString()}
                                     </span>
-                                    <span className="text-sm text-gray-500 w-14 text-right">
+                                    <span className="text-xs text-gray-500 w-12 text-right">
                                         {item.percentage.toFixed(1)}%
                                     </span>
                                 </div>
