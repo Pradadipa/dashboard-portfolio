@@ -38,16 +38,16 @@ interface RevenueByChannelChartProps {
     endDate: string;
 }
 
-// Color palette untuk slices
+// Color palette untuk slices - fixed categorical order (CVD-safe), never cycled/reassigned by rank
 const COLORS = [
-  "#3b82f6",  // blue
-  "#10b981",  // green
-  "#f59e0b",  // amber
-  "#ef4444",  // red
-  "#8b5cf6",  // purple
-  "#ec4899",  // pink
-  "#14b8a6",  // teal
-  "#f97316",  // orange
+  "#2a78d6",  // blue
+  "#eb6834",  // orange
+  "#1baf7a",  // aqua
+  "#eda100",  // yellow
+  "#e87ba4",  // magenta
+  "#008300",  // green
+  "#4a3aa7",  // violet
+  "#e34948",  // red
 ];
 
 // Create main function
@@ -71,7 +71,7 @@ function RevenueByChannelChart({ startDate, endDate }: RevenueByChannelChartProp
 
                 const chartData: ChartData[] = response.data.channels.map((c) => ({
                     channel: c.channel,
-                    revenue: Number(c.orders),
+                    revenue: Number(c.revenue),
                     orders: c.orders
                 }));
 
@@ -99,6 +99,11 @@ function RevenueByChannelChart({ startDate, endDate }: RevenueByChannelChartProp
         percentage: totalRevenue > 0 ? (item.revenue/totalRevenue) * 100 : 0,
     }));
 
+    // Color tetap terikat ke channel (bukan posisi/rank) supaya donut & legend selalu konsisten
+    const colorByChannel = new Map(
+        data.map((item, index) => [item.channel, COLORS[index % COLORS.length]])
+    );
+
     return (
     <div className="bg-white p-3 rounded-lg shadow h-full flex flex-col min-h-0">
         <h2 className="text-sm font-semibold text-gray-900 mb-1 flex-none">
@@ -115,24 +120,30 @@ function RevenueByChannelChart({ startDate, endDate }: RevenueByChannelChartProp
                         data={data}
                         dataKey="revenue"
                         nameKey="channel"
-                        innerRadius={35}
-                        outerRadius={55}
+                        innerRadius="55%"
+                        outerRadius="92%"
                         paddingAngle={2}
                         cornerRadius={4}
+                        stroke="#fcfcfb"
+                        strokeWidth={2}
                     >
-                        {data.map((_, index) => (
+                        {data.map((item) => (
                         <Cell
-                            key={`cell-${index}`}
-                            fill={COLORS[index % COLORS.length]}
+                            key={`cell-${item.channel}`}
+                            fill={colorByChannel.get(item.channel)}
                         />
                         ))}
                     </Pie>
                     <Tooltip
-                        formatter={(value) => `$${Number(value).toLocaleString()}`}
+                        formatter={(value: number, _name, item) => [
+                            `$${Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                            item.payload.channel,
+                        ]}
                         contentStyle={{
                         backgroundColor: "white",
                         border: "1px solid #e5e7eb",
                         borderRadius: "8px",
+                        fontSize: "12px",
                         }}
                     />
                     </PieChart>
@@ -140,38 +151,40 @@ function RevenueByChannelChart({ startDate, endDate }: RevenueByChannelChartProp
 
                 {/* Center overlay */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <p className="text-sm font-bold text-gray-900">
+                    <p className="text-base font-bold text-gray-900">
                         ${totalRevenue.toLocaleString()}
                     </p>
-                    <p className="text-[10px] text-gray-500">Total Revenue</p>
+                    <p className="text-[10px] text-gray-500 uppercase tracking-wide">Total Revenue</p>
                 </div>
             </div>
                 {/* Legend table */}
-                <div className="h-full min-h-0 overflow-y-auto">
-                    {dataWithPercentage.map((item, index) => (
+                <div className="overflow-y-auto divide-y divide-gray-100 border border-gray-100 rounded-lg p-2 shadow-sm">
+                    {[...dataWithPercentage]
+                        .sort((a, b) => b.revenue - a.revenue)
+                        .map((item) => (
                         <div
                             key={item.channel}
-                            className="flex items-center justify-between gap-2 py-1">
+                            className="grid grid-cols-[1fr_auto_2.5rem] items-center gap-3 py-1.5">
                                 {/* Color dot + name */}
-                                <div className="flex items-center gap-2 min-w-0 flex-1">
-                                    <div
-                                        className="w-2 h-2 rounded-full flex-shrink-0"
-                                        style={{ backgroundColor: COLORS[index % COLORS.length]}}
+                                <div className="flex items-center gap-2 min-w-0">
+                                    <span
+                                        className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                                        style={{ backgroundColor: colorByChannel.get(item.channel) }}
                                         />
-                                    <span className="text-xs text-gray-700 truncate">
+                                    <span className="text-xs text-gray-700 truncate" title={item.channel}>
                                         {item.channel}
                                     </span>
                                 </div>
 
-                                {/* Value + percentage */}
-                                <div className="flex items-center gap-2 flex-shrink-0">
-                                    <span className="text-xs font-medium text-gray-900">
-                                        ${item.revenue.toLocaleString()}
-                                    </span>
-                                    <span className="text-xs text-gray-500 w-12 text-right">
-                                        {item.percentage.toFixed(1)}%
-                                    </span>
-                                </div>
+                                {/* Value */}
+                                <span className="text-xs font-medium text-gray-900 tabular-nums whitespace-nowrap">
+                                    ${item.revenue.toLocaleString()}
+                                </span>
+
+                                {/* Percentage */}
+                                <span className="text-xs text-gray-500 tabular-nums text-right">
+                                    {item.percentage.toFixed(1)}%
+                                </span>
                             </div>
                     ))}
                 </div>

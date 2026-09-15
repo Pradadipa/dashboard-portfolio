@@ -132,10 +132,10 @@ function YearlyRevenueComparison() {
             <Tooltip
                 formatter={(value) => `$${Number(value).toLocaleString()}`}
                 contentStyle={{
-                backgroundColor: "white",
-                border: "1px solid #e5e7eb",
-                borderRadius: "8px",
-                fontSize: 12,
+                    backgroundColor: "white",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: "8px",
+                    fontSize: 12,
                 }}
             />
             <Legend verticalAlign="top" align="right" wrapperStyle={{ fontSize: 10 }} height={16} iconSize={8} />

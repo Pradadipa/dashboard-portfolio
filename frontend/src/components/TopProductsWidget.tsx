@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 // import { LineChart, Line, ResponsiveContainer } from "recharts";
 
 
@@ -15,6 +16,10 @@ interface TopProduct {
     revenue: string;
     units_sold: number;
     sparkline: SparklinePoint[];
+    previous_revenue: string;
+    previous_units_sold: number;
+    revenue_change_percent: string | null;
+    units_change_percent: string | null;
 }
 
 interface TopProductsResponse {
@@ -46,7 +51,6 @@ function TopProductsWidget({ startDate, endDate }: TopProductWidgetProps) {
                         params: {
                             start_date: startDate,
                             end_date: endDate,
-                            limit: 10
                         },
                     }
                 );
@@ -108,17 +112,26 @@ function TopProductsWidget({ startDate, endDate }: TopProductWidgetProps) {
                             <th className="text-left text-[10px] font-medium text-gray-500 uppercase tracking-wide py-1 pr-4">
                                 Units
                             </th>
-                            {/* <th className="text-left text-[10px] font-medium text-gray-500 uppercase tracking-wide py-1 pr-24">
+                            <th className="text-left text-[10px] font-medium text-gray-500 uppercase tracking-wide py-1 pr-4">
                                 Trend
-                            </th> */}
+                            </th>
                         </tr>
                     </thead>
                     <tbody>
                         {data.products.map((product) => {
-                            // Transform sparkline data untuk chart
-                            // const sparklineData = product.sparkline.map((p) => ({
-                            //     value: Number(p.revenue)
-                            // }));
+                            // Change indicator setup
+                            const changePercent = product.revenue_change_percent
+                                ? Number(product.revenue_change_percent)
+                                : null;
+                            
+                            const isPositive = changePercent !== null && changePercent > 0;
+                            const isNegative = changePercent !== null && changePercent < 0;
+                            const TrendIcon = isPositive ? TrendingUp : isNegative ? TrendingDown : Minus;
+                            const changeColor = isPositive
+                                ? "text-green-600"
+                                : isNegative
+                                ? "text-red-600"
+                                : "text-gray-500";
 
                             return (
                                 <tr
@@ -153,24 +166,22 @@ function TopProductsWidget({ startDate, endDate }: TopProductWidgetProps) {
                                         </span>
                                     </td>
 
-                                    {/* Sparkline
-                                    <td className="py-1">
-                                        <div className="h-6 w-20">
-                                            {sparklineData.length > 0 && (
-                                                <ResponsiveContainer width="100%" height="100%">
-                                                    <LineChart data={sparklineData}>
-                                                        <Line
-                                                            type="monotone"
-                                                            dataKey="value"
-                                                            stroke="#3b82f6"
-                                                            strokeWidth={2}
-                                                            dot={false}
-                                                        />
-                                                    </LineChart>
-                                                </ResponsiveContainer>
-                                            )}
+                                    {/* Change % (NEW) */}
+                                    <td className="py-3 pr-4">
+                                        {changePercent !== null ? (
+                                        <div className={`flex items-center gap-1 text-xs ${changeColor}`}>
+                                            <TrendIcon size={14} />
+                                            <span className="font-medium">
+                                            {isPositive && "+"}
+                                            {changePercent.toFixed(1)}%
+                                            </span>
                                         </div>
-                                    </td> */}
+                                        ) : (
+                                        <div>
+                                            <span className="text-xs text-gray-400 italic">New</span>
+                                        </div>
+                                        )}
+                                    </td>
                                 </tr>
                             );
                         })}

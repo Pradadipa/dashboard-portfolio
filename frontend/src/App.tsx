@@ -60,13 +60,13 @@ function App() {
         <div className="flex-1 min-h-0 grid grid-rows-[1fr_1fr] gap-2 px-3 pb-2 pt-2">
 
           {/* BARIS ATAS: Revenue Trend (1) bersebelahan dengan Revenue Overview (1) */}
-          <div className="min-h-0 grid grid-cols-[1fr_1fr] gap-2">
+          <div className="min-h-0 grid grid-cols-[3fr_2fr] gap-2">
             <RevenueTrendChart startDate={startDate} endDate={endDate} granularity={granularity} />
             <YearlyRevenueComparison />
           </div>
 
           {/* BARIS BAWAH: Top Products (2) bersebelahan dengan Revenue by Channel (1) */}
-          <div className="min-h-0 grid grid-cols-[2fr_1fr] gap-2">
+          <div className="min-h-0 grid grid-cols-[1fr_1fr] gap-2">
             <div className="min-h-0 overflow-y-auto bg-white rounded-lg shadow p-2">
               <TopProductsWidget startDate={startDate} endDate={endDate} />
             </div>

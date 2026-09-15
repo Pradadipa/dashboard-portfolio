@@ -1,20 +1,33 @@
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+def calc_change_percent(current: Decimal, previous: Decimal) -> Decimal | None:
+    """
+    Hitung % change vs previous.
+    Return None kalau previous = 0 (tidak bisa hitung growth).
+    """
+    if previous == 0:
+        return None
+    change = ((current - previous) / previous) * 100
+    return change.quantize(Decimal("0.01"))
+
 from app.schemas.product import (
     TopProductsResponse,
     TopProduct,
-    ProductSparklinePoint,
 )
 
 async def get_top_products(
         db: AsyncSession,
         start_date: date,
         end_date: date,
-        limit: int = 10
 ) -> TopProductsResponse:
+
+    period_length = (end_date - start_date).days + 1
+    previous_end = start_date - timedelta(days=1)
+    previous_start = previous_end - timedelta(days=period_length - 1)
+
     top_query = text("""
         SELECT
             title AS product_name,
@@ -25,7 +38,6 @@ async def get_top_products(
         GROUP BY title
         HAVING SUM(amount) > 0
         ORDER BY revenue DESC
-        LIMIT :limit
     """)
 
     top_result = await db.execute(
@@ -33,7 +45,6 @@ async def get_top_products(
         {
             "start_date": start_date,
             "end_date": end_date,
-            "limit": limit
         }
     )
     top_rows = top_result.all()
@@ -48,51 +59,68 @@ async def get_top_products(
     # Extract titles untuk sparkline query
     product_titles = [row.product_name for row in top_rows]
 
-    # Create sparkline
-    sparkline_query = text("""
+    previous_query = text("""
         SELECT
-            MAX(title) AS product_name,
-            date_key AS date,
-            SUM(amount) AS revenue
+            title AS product_name,
+            COALESCE(SUM(amount), 0) AS revenue,
+            COALESCE(SUM(quantity), 0) AS units_sold
         FROM shopify.v_net_sales_lines
-        WHERE title = ANY(:product_titles) AND date_key >= :start_date AND date_key <= :end_date
-        GROUP BY title, date
-        ORDER BY title, date
+        WHERE date_key >= :start_date
+            AND date_key <= :end_date
+            AND title = ANY(:product_titles)
+        GROUP BY title
     """)
 
-    sparkline_result = await db.execute(
-        sparkline_query,
+    previous_result = await db.execute(
+        previous_query,
         {
-            "product_titles": product_titles,
-            "start_date": start_date,
-            "end_date": end_date
+            "start_date": previous_start,
+            "end_date": previous_end,
+            "product_titles": product_titles
         }
     )
 
-    sparkline_rows = sparkline_result.all()
+    previous_rows = previous_result.all()
 
-    # Build lookup dict
-    sparkline_lookup: dict[str, list[ProductSparklinePoint]] = {}
-    for row in sparkline_rows:
-        point = ProductSparklinePoint(
-            date=row.date,
-            revenue=Decimal(row.revenue).quantize(Decimal("0.01"))
-        )
-        if row.product_name not in sparkline_lookup:
-            sparkline_lookup[row.product_name] = []
-        sparkline_lookup[row.product_name].append(point)
+    # Build lookup
+    previous_lookup: dict[str, dict] = {}
+    for row in previous_rows:
+        previous_lookup[row.product_name] = {
+            'revenue': Decimal(row.revenue),
+            'units_sold': int(row.units_sold or 0)
+        }
+
 
     # Build response
     products = []
     for index, row in enumerate(top_rows):
+        current_revenue = Decimal(row.revenue)
+        current_units = int(row.units_sold or 0)
+
+        previous_data = previous_lookup.get(row.product_name, {
+            'revenue': Decimal("0"),
+            'units_sold': 0
+        })
+        previous_revenue = previous_data['revenue']
+        previous_units = previous_data['units_sold']
+
+        # Calc change % (pakai helper function)
+        revenue_change = calc_change_percent(current_revenue, previous_revenue)
+        units_change = calc_change_percent(
+            Decimal(current_units),
+            Decimal(previous_units),
+        ) 
         products.append(TopProduct(
-            rank=index+1,
-            product_id=0,
-            product_name=row.product_name,
-            revenue=Decimal(row.revenue).quantize(Decimal("0.01")),
-            units_sold=int(row.units_sold or 0),
-            sparkline=sparkline_lookup.get(row.product_name, [])
-        ))
+                rank=index + 1,
+                product_id=0,
+                product_name=row.product_name,
+                revenue=current_revenue.quantize(Decimal("0.01")),
+                units_sold=current_units,
+                previous_revenue=previous_revenue.quantize(Decimal("0.01")),
+                previous_units_sold=previous_units,
+                revenue_change_percent=revenue_change,
+                units_change_percent=units_change,
+            ))
 
     return TopProductsResponse(
         start_date=start_date,

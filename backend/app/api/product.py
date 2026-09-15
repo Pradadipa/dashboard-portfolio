@@ -25,12 +25,6 @@ async def top_products(
         default_factory=date.today,
         description="Tanggal akhir periode",
     ),
-    limit: int = Query(
-        default=10,
-        description="Jumlah top products",
-        ge=1,
-        le=50,
-    ),
     db: AsyncSession = Depends(get_db),
 ) -> TopProductsResponse:
     """
@@ -51,4 +45,4 @@ async def top_products(
             detail="Range maksimum 1 tahun untuk top products",
         )
     
-    return await get_top_products(db, start_date, end_date, limit)
+    return await get_top_products(db, start_date, end_date)
