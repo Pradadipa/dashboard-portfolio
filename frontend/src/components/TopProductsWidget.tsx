@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 // import { LineChart, Line, ResponsiveContainer } from "recharts";
 
 
@@ -15,6 +16,10 @@ interface TopProduct {
     revenue: string;
     units_sold: number;
     sparkline: SparklinePoint[];
+    previous_revenue: string;
+    previous_units_sold: number;
+    revenue_change_percent: string | null;
+    units_change_percent: string | null;
 }
 
 interface TopProductsResponse {
@@ -46,7 +51,6 @@ function TopProductsWidget({ startDate, endDate }: TopProductWidgetProps) {
                         params: {
                             start_date: startDate,
                             end_date: endDate,
-                            limit: 10
                         },
                     }
                 );
@@ -86,15 +90,12 @@ function TopProductsWidget({ startDate, endDate }: TopProductWidgetProps) {
             {/* Header */}
             <div className="mb-2">
                 <h2 className="text-sm font-semibold text-gray-900">Top Products</h2>
-                <p className="text-xs text-gray-600">
-                    Best performance by revenue
-                </p>
             </div>
 
             {/* Table */}
-            <div className="overflow-x-auto">
+            <div className="overflow-auto max-h-96">
                 <table className="w-full">
-                    <thead>
+                    <thead className="sticky top-0 bg-white z-10 shadow-sm">
                         <tr className="border-b border-gray-200">
                             <th className="text-left text-[10px] font-medium text-gray-500 uppercase tracking-wide py-1 pr-4 w-12">
                                 Rank
@@ -106,19 +107,28 @@ function TopProductsWidget({ startDate, endDate }: TopProductWidgetProps) {
                                 Revenue
                             </th>
                             <th className="text-left text-[10px] font-medium text-gray-500 uppercase tracking-wide py-1 pr-4">
-                                Units
+                                QTY
                             </th>
-                            {/* <th className="text-left text-[10px] font-medium text-gray-500 uppercase tracking-wide py-1 pr-24">
-                                Trend
-                            </th> */}
+                            <th className="text-left text-[10px] font-medium text-gray-500 uppercase tracking-wide py-1 pr-4">
+                                QTY Trend
+                            </th>
                         </tr>
                     </thead>
                     <tbody>
                         {data.products.map((product) => {
-                            // Transform sparkline data untuk chart
-                            // const sparklineData = product.sparkline.map((p) => ({
-                            //     value: Number(p.revenue)
-                            // }));
+                            // Change indicator setup
+                            const changePercent = product.revenue_change_percent
+                                ? Number(product.revenue_change_percent)
+                                : null;
+                            
+                            const isPositive = changePercent !== null && changePercent > 0;
+                            const isNegative = changePercent !== null && changePercent < 0;
+                            const TrendIcon = isPositive ? TrendingUp : isNegative ? TrendingDown : Minus;
+                            const changeColor = isPositive
+                                ? "text-green-600"
+                                : isNegative
+                                ? "text-red-600"
+                                : "text-gray-500";
 
                             return (
                                 <tr
@@ -153,24 +163,22 @@ function TopProductsWidget({ startDate, endDate }: TopProductWidgetProps) {
                                         </span>
                                     </td>
 
-                                    {/* Sparkline
-                                    <td className="py-1">
-                                        <div className="h-6 w-20">
-                                            {sparklineData.length > 0 && (
-                                                <ResponsiveContainer width="100%" height="100%">
-                                                    <LineChart data={sparklineData}>
-                                                        <Line
-                                                            type="monotone"
-                                                            dataKey="value"
-                                                            stroke="#3b82f6"
-                                                            strokeWidth={2}
-                                                            dot={false}
-                                                        />
-                                                    </LineChart>
-                                                </ResponsiveContainer>
-                                            )}
+                                    {/* Change % (NEW) */}
+                                    <td className="py-3 pr-4">
+                                        {changePercent !== null ? (
+                                        <div className={`flex items-center gap-1 text-xs ${changeColor}`}>
+                                            <TrendIcon size={14} />
+                                            <span className="font-medium">
+                                            {isPositive && "+"}
+                                            {changePercent.toFixed(1)}%
+                                            </span>
                                         </div>
-                                    </td> */}
+                                        ) : (
+                                        <div>
+                                            <span className="text-xs text-gray-400 italic">New</span>
+                                        </div>
+                                        )}
+                                    </td>
                                 </tr>
                             );
                         })}

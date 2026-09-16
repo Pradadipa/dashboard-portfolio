@@ -47,6 +47,12 @@ class RevenueSummary(BaseModel):
         ge=0,
         examples=["6543.22"],
     )
+    total_qty: int = Field(
+        ...,
+        description="Total quantity (unit) terjual",
+        ge=0,
+        examples=[5678],
+    )
     average_order_value: Decimal = Field(
         ...,
         description="AOV = net_sales / total_orders",
@@ -67,6 +73,7 @@ class RevenueSummary(BaseModel):
     total_returns_change_percent: Decimal | None = Field(default=None)
     orders_change_percent: Decimal | None = Field(default=None)
     aov_change_percent: Decimal | None = Field(default=None)
+    total_qty_change_percent: Decimal | None = Field(default=None)
 
     # Sparklines (5 field)
     net_sales_sparkline: list[SparklinePoint] = Field(default_factory=list)
@@ -74,6 +81,7 @@ class RevenueSummary(BaseModel):
     total_returns_sparkline: list[SparklinePoint] = Field(default_factory=list)
     orders_sparkline: list[SparklinePoint] = Field(default_factory=list)
     aov_sparkline: list[SparklinePoint] = Field(default_factory=list)
+    total_qty_sparkline: list[SparklinePoint] = Field(default_factory=list)
 
 class Granularity(str, Enum):
     """Level agregasi untuk time series data"""
