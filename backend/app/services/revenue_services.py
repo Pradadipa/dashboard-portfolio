@@ -46,6 +46,7 @@ async def get_revenue_summary(
         SELECT
             COALESCE(SUM(CASE WHEN row_type = 'SALE' THEN amount ELSE 0 END), 0) AS total_sales,
             COALESCE(SUM(CASE WHEN row_type = 'RETURN' THEN amount ELSE 0 END), 0) AS total_returns_negative,
+            COALESCE(SUM(quantity), 0) AS total_qty,
             COALESCE(SUM(amount), 0) AS net_sales,
             COALESCE(COUNT(DISTINCT CASE WHEN row_type = 'SALE' THEN order_id END), 0) AS total_orders
         FROM 
@@ -97,6 +98,7 @@ async def get_revenue_summary(
     total_returns = abs(Decimal(current.total_returns_negative))  # Ensure refunds are positive
     net_sales = Decimal(current.net_sales)
     total_orders = current.total_orders or 0  # Default to 0 if None
+    total_qty = current.total_qty or 0  # Default to 0 if None
 
     # Calculate average order value, handling division by zero
     aov = (net_sales / total_orders) if total_orders > 0 else Decimal('0.00')
@@ -114,11 +116,13 @@ async def get_revenue_summary(
     previous_total_returns = abs(Decimal(previous.total_returns_negative))
     previous_orders = previous.total_orders or 0
     previous_aov = (previous_net_sales/previous_orders) if previous_orders > 0 else Decimal("0.00")
+    previous_total_qty = previous.total_qty or 0
 
     net_sales_change = calc_change(net_sales, previous_net_sales)
     total_sales_change = calc_change(total_sales, previous_total_sales)
     total_return_change = calc_change(total_returns, previous_total_returns)
     orders_change = calc_change(Decimal(total_orders), Decimal(previous_orders))
+    qty_change = calc_change(Decimal(total_qty), Decimal(previous_total_qty))
     aov_change = calc_change(aov, previous_aov)
 
     # 7. Build sparkline points
@@ -173,6 +177,7 @@ async def get_revenue_summary(
         total_returns=total_returns.quantize(Decimal('0.01')),  # Round to 2 decimal places
         net_sales=net_sales.quantize(Decimal('0.01')),  # Round to 2 decimal places
         total_orders=total_orders,
+        total_qty=total_qty,
         average_order_value=aov.quantize(Decimal('0.01')),  # Round to 2 decimal places
         currency='USD',  # Assuming USD; adjust as necessary
         # Percentage changes
@@ -181,6 +186,7 @@ async def get_revenue_summary(
         total_returns_change_percent=total_return_change,         # ← TAMBAH (perhatikan nama variable-mu singular)
         orders_change_percent=orders_change,
         aov_change_percent=aov_change,
+        total_qty_change_percent=qty_change,
         # Sparklines
         net_sales_sparkline=net_sales_sparkline,
         total_sales_sparkline=total_sales_sparkline,

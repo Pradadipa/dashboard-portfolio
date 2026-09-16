@@ -67,7 +67,7 @@ function App() {
 
           {/* BARIS BAWAH: Top Products (2) bersebelahan dengan Revenue by Channel (1) */}
           <div className="min-h-0 grid grid-cols-[1fr_1fr] gap-2">
-            <div className="min-h-0 overflow-y-auto bg-white rounded-lg shadow p-2">
+            <div className="min-h-0 bg-white rounded-lg shadow p-2">
               <TopProductsWidget startDate={startDate} endDate={endDate} />
             </div>
             <RevenueByChannelChart startDate={startDate} endDate={endDate} />

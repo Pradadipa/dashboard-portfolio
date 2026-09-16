@@ -90,15 +90,12 @@ function TopProductsWidget({ startDate, endDate }: TopProductWidgetProps) {
             {/* Header */}
             <div className="mb-2">
                 <h2 className="text-sm font-semibold text-gray-900">Top Products</h2>
-                <p className="text-xs text-gray-600">
-                    Best performance by revenue
-                </p>
             </div>
 
             {/* Table */}
-            <div className="overflow-x-auto">
+            <div className="overflow-auto max-h-96">
                 <table className="w-full">
-                    <thead>
+                    <thead className="sticky top-0 bg-white z-10 shadow-sm">
                         <tr className="border-b border-gray-200">
                             <th className="text-left text-[10px] font-medium text-gray-500 uppercase tracking-wide py-1 pr-4 w-12">
                                 Rank
@@ -110,10 +107,10 @@ function TopProductsWidget({ startDate, endDate }: TopProductWidgetProps) {
                                 Revenue
                             </th>
                             <th className="text-left text-[10px] font-medium text-gray-500 uppercase tracking-wide py-1 pr-4">
-                                Units
+                                QTY
                             </th>
                             <th className="text-left text-[10px] font-medium text-gray-500 uppercase tracking-wide py-1 pr-4">
-                                Trend
+                                QTY Trend
                             </th>
                         </tr>
                     </thead>

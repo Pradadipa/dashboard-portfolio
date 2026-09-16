@@ -8,6 +8,9 @@ import {
     Package,
     TrendingUp as TrendingUpIcon,
     icons,
+    Wallet,
+    Shirt,
+    CircleStar,
 } from "lucide-react";
 
 interface SparklinePoint {
@@ -22,6 +25,7 @@ interface RevenueSummary {
     net_sales: string;
     total_sales: string;
     total_returns: string;
+    total_qty: number;
     average_order_value: string;
     currency: string;
     net_sales_change_percent: string | null;
@@ -29,6 +33,7 @@ interface RevenueSummary {
     total_returns_change_percent: string | null;
     orders_change_percent: string | null;
     aov_change_percent: string | null;
+    total_qty_change_percent: string | null;
     net_sales_sparkline: SparklinePoint[];
     total_sales_sparkline: SparklinePoint[];
     total_returns_sparkline: SparklinePoint[];
@@ -86,28 +91,28 @@ function RevenueSummaryCards({ startDate, endDate } : RevenueSummaryCardsProps) 
             changePercent: data.net_sales_change_percent
                 ? Number(data.net_sales_change_percent)
                 : null,
-            icon: <DollarSign size={14} />,
+            icon: <Wallet size={18} />,
             sparklineData:toSparklineData(data.net_sales_sparkline),
             sparklineColor: "#10b981"
         },
         { 
-            label: "Total Sales", 
+            label: "Gross Sales", 
             value: `$${Number(data.total_sales).toLocaleString()}`,
             changePercent: data.total_sales_change_percent
                 ? Number(data.total_sales_change_percent)
                 : null,
-            icon: <TrendingUpIcon size={14} />,
+            icon: <TrendingUpIcon size={18} />,
             sparklineData:toSparklineData(data.total_sales_sparkline),
             sparklineColor: "#10b981"
         },
         { 
-            label: "Total Returns", 
-            value: `$${Number(data.total_returns).toLocaleString()}`,
-            changePercent: data.total_returns_change_percent
-                ? Number(data.total_returns_change_percent)
+            label: "Total QTY", 
+            value: `${Number(data.total_qty).toLocaleString()}`,
+            changePercent: data.total_qty_change_percent
+                ? Number(data.total_qty_change_percent)
                 : null,
-            icon: <RotateCcw size={14} />,
-            sparklineData: toSparklineData(data.total_returns_sparkline),
+            icon: <Shirt size={18} />,
+            // sparklineData: toSparklineData(data.total_qty_sparkline),
             sparklineColor: "#ef4444",  // red
         },
         { 
@@ -116,7 +121,7 @@ function RevenueSummaryCards({ startDate, endDate } : RevenueSummaryCardsProps) 
             changePercent: data.orders_change_percent
                 ? Number(data.orders_change_percent)
                 : null,
-            icon: <ShoppingCart size={14} />,
+            icon: <ShoppingCart size={18} />,
             sparklineData:toSparklineData(data.orders_sparkline),
             sparklineColor: "#10b981"
         },
@@ -126,7 +131,7 @@ function RevenueSummaryCards({ startDate, endDate } : RevenueSummaryCardsProps) 
             changePercent: data.aov_change_percent
                 ? Number(data.aov_change_percent)
                 : null,
-            icon: <ShoppingCart size={14} />,
+            icon: <CircleStar size={18} />,
             sparklineData:toSparklineData(data.aov_sparkline),
             sparklineColor: "#10b981"
         },
