@@ -1,7 +1,85 @@
 @import "tailwindcss";
 
-html, body, #root {
-    height: 100%;
-    margin: 0;
-    overflow: hidden;
+/* Maps design tokens below to real Tailwind utilities
+   (bg-card, hover:bg-card-hover, border-subtle, text-primary, etc.) */
+@theme {
+  --color-card: var(--bg-card);
+  --color-kpi-card: var(--bg-kpi-card);
+  --color-card-hover: var(--bg-card-hover);
+  --color-subtle: var(--border-color);
+  --color-subtle-strong: var(--border-color-strong);
+  --color-primary: var(--text-primary);
+  --color-secondary: var(--text-secondary);
+  --color-tertiary: var(--text-tertiary);
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --color-success: var(--semantic-success);
+  --color-danger: var(--semantic-danger);
+  --color-warning: var(--semantic-warning);
+  --color-info: var(--semantic-info);
+}
+
+/* === Design Tokens === */
+:root {
+  /* Background layers (dark theme) */
+  --bg-page: #030303;              /* Base page background */
+  --bg-card: #030303;
+  --bg-kpi-card: #050505;           /* KPI Card background */
+  --bg-card-hover: #251811;         /* Card hover state */
+  --bg-input: #251811;              /* Input fields */
+  --border-color: #141414;          /* Subtle borders */
+  --border-color-strong: #3d2515;   /* Stronger borders */
+  
+  /* Text hierarchy */
+  --text-primary: #fef3e2;          /* Main headings, values */
+  --text-secondary: #c9a67d;        /* Labels, subtitles */
+  --text-tertiary: #8b6f52;         /* Muted text */
+  --text-inverse: #0f0a08;          /* Text on light backgrounds (rare) */
+  
+  /* Sunset accents */
+  --accent-primary: #F88F22;        /* Bright orange (primary) */
+  --accent-secondary: #FBB931;      /* Golden yellow */
+  --accent-tertiary: #EA6113;       /* Deep orange */
+  --accent-soft: #FFE3B3;           /* Cream */
+  
+  /* Semantic colors */
+  --semantic-success: #7cc47c;      /* Green for positive change */
+  --semantic-danger: #e85d3f;       /* Coral red for negative */
+  --semantic-warning: #FBB931;      /* Yellow for warning */
+  --semantic-info: #F88F22;         /* Orange for info */
+  
+  /* Chart colors (untuk multi-series charts) */
+  --chart-1: #F88F22;
+  --chart-2: #FBB931;
+  --chart-3: #EA6113;
+  --chart-4: #FFE3B3;
+  --chart-5: #c9a67d;
+  --chart-6: #e85d3f;
+  --chart-7: #7cc47c;
+  --chart-8: #8b6f52;
+}
+
+/* === Global Styles === */
+body {
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+  min-height: 100vh;
+}
+
+/* Custom scrollbar untuk dark theme */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-page);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color-strong);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
 }

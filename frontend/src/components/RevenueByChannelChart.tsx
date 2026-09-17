@@ -38,16 +38,16 @@ interface RevenueByChannelChartProps {
     endDate: string;
 }
 
-// Color palette untuk slices - fixed categorical order (CVD-safe), never cycled/reassigned by rank
+// Color palette untuk slices - gradasi orange (tema dashboard), tetap fixed per posisi kategori
 const COLORS = [
-  "#2a78d6",  // blue
-  "#eb6834",  // orange
-  "#1baf7a",  // aqua
-  "#eda100",  // yellow
-  "#e87ba4",  // magenta
-  "#008300",  // green
-  "#4a3aa7",  // violet
-  "#e34948",  // red
+  "#F88F22",  // accent-primary
+  "#FBB931",  // accent-secondary
+  "#EA6113",  // accent-tertiary
+  "#c9700f",
+  "#FFE3B3",  // accent-soft
+  "#a5490a",
+  "#ffcf8a",
+  "#7a3706",
 ];
 
 // Create main function
@@ -87,9 +87,24 @@ function RevenueByChannelChart({ startDate, endDate }: RevenueByChannelChartProp
         fetchData();
     }, [ startDate, endDate ]);
 
-    if (loading) return <p>Loading channel breakdown...</p>;
-    if (error) return <p>Error: {error}</p>;
-    if (data.length === 0) return <p>No channel data</p>;
+    if (loading)
+        return (
+            <div className="bg-kpi-card border border-subtle p-6 rounded-lg shadow text-tertiary">
+                Loading channel breakdown...
+            </div>
+        );
+    if (error)
+        return (
+            <div className="bg-red-50 border border-red-200 p-6 rounded-lg text-red-700">
+                Error: {error}
+            </div>
+        );
+    if (data.length === 0)
+        return (
+            <div className="bg-kpi-card border border-subtle p-6 rounded-lg shadow text-tertiary">
+                No channel data
+            </div>
+        );
     // Hitung total revenue dari data
     const totalRevenue = data.reduce((sum, item) => sum + item.revenue, 0);
 
@@ -105,8 +120,8 @@ function RevenueByChannelChart({ startDate, endDate }: RevenueByChannelChartProp
     );
 
     return (
-    <div className="bg-white p-3 rounded-lg shadow h-full flex flex-col min-h-0">
-        <h2 className="text-sm font-semibold text-gray-900 mb-1 flex-none">
+    <div className="bg-kpi-card p-3 border border-subtle rounded-lg hover:bg-card-hover transition-colors shadow h-full flex flex-col min-h-0">
+        <h2 className="text-sm font-medium text-secondary mb-1 flex-none">
             Revenue by Channel
         </h2>
 
@@ -124,7 +139,7 @@ function RevenueByChannelChart({ startDate, endDate }: RevenueByChannelChartProp
                         outerRadius="92%"
                         paddingAngle={2}
                         cornerRadius={4}
-                        stroke="#fcfcfb"
+                        stroke="var(--bg-kpi-card)"
                         strokeWidth={2}
                     >
                         {data.map((item) => (
@@ -135,30 +150,33 @@ function RevenueByChannelChart({ startDate, endDate }: RevenueByChannelChartProp
                         ))}
                     </Pie>
                     <Tooltip
-                        formatter={(value: number, _name, item) => [
+                        formatter={(value, _name, item) => [
                             `$${Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
                             item.payload.channel,
                         ]}
                         contentStyle={{
-                        backgroundColor: "white",
-                        border: "1px solid #e5e7eb",
+                        backgroundColor: "var(--bg-card-hover)",
+                        border: "1px solid var(--border-color-strong)",
                         borderRadius: "8px",
                         fontSize: "12px",
+                        color: "var(--text-primary)",
                         }}
+                        labelStyle={{ color: "var(--text-primary)" }}
+                        itemStyle={{ color: "var(--text-secondary)" }}
                     />
                     </PieChart>
                 </ResponsiveContainer>
 
                 {/* Center overlay */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <p className="text-base font-bold text-gray-900">
+                    <p className="text-base text-primary">
                         ${totalRevenue.toLocaleString()}
                     </p>
-                    <p className="text-[10px] text-gray-500 uppercase tracking-wide">Total Revenue</p>
+                    <p className="text-[10px] text-tertiary uppercase tracking-wide">Total Revenue</p>
                 </div>
             </div>
                 {/* Legend table */}
-                <div className="overflow-y-auto divide-y divide-gray-100 border border-gray-100 rounded-lg p-2 shadow-sm">
+                <div className="overflow-y-auto divide-y divide-subtle border border-subtle rounded-lg p-2 shadow-sm">
                     {[...dataWithPercentage]
                         .sort((a, b) => b.revenue - a.revenue)
                         .map((item) => (
@@ -171,18 +189,18 @@ function RevenueByChannelChart({ startDate, endDate }: RevenueByChannelChartProp
                                         className="w-2.5 h-2.5 rounded-full flex-shrink-0"
                                         style={{ backgroundColor: colorByChannel.get(item.channel) }}
                                         />
-                                    <span className="text-xs text-gray-700 truncate" title={item.channel}>
+                                    <span className="text-xs text-secondary truncate" title={item.channel}>
                                         {item.channel}
                                     </span>
                                 </div>
 
                                 {/* Value */}
-                                <span className="text-xs font-medium text-gray-900 tabular-nums whitespace-nowrap">
+                                <span className="text-xs text-primary tabular-nums whitespace-nowrap">
                                     ${item.revenue.toLocaleString()}
                                 </span>
 
                                 {/* Percentage */}
-                                <span className="text-xs text-gray-500 tabular-nums text-right">
+                                <span className="text-xs text-tertiary tabular-nums text-right">
                                     {item.percentage.toFixed(1)}%
                                 </span>
                             </div>

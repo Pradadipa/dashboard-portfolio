@@ -1,6 +1,4 @@
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
-import { ResponsiveContainer } from "recharts";
-import { Area, AreaChart } from 'recharts';
 import type { ReactNode } from "react"
 
 interface SparklineData {
@@ -13,6 +11,7 @@ interface KpiCardProps {
     changePercent?: number | null;
     icon?: ReactNode;
     sparklineData?: SparklineData[];
+    iconColor?: string;
     sparklineColor?: string;
 }
 
@@ -21,8 +20,7 @@ function KpiCard({
     value,
     changePercent,
     icon,
-    sparklineData,
-    sparklineColor
+    iconColor,
 } : KpiCardProps) {
     // Determine trend direction
     const isPositive = changePercent !== null && changePercent !== undefined && changePercent > 0;
@@ -41,13 +39,13 @@ function KpiCard({
     const TrendIcon = isPositive ? TrendingUp : isNegative ? TrendingDown : Minus;
 
     return (
-        <div className="bg-white p-3 rounded-lg shadow border border-gray-100 hover:shadow-md transition-shadow">
+        <div className="bg-kpi-card p-3 rounded-lg border border-subtle hover:bg-card-hover transition-colors">
         {/* Grid 2 kolom: content + icon */}
         <div className="grid grid-cols-[1fr_auto] gap-3">
             {/* Kolom 1: Content */}
             <div className="min-w-0">
-                <p className="text-sm font-medium text-gray-600 truncate">{label}</p>
-                <p className="text-lg font-bold text-gray-900 mt-1">{value}</p>
+                <p className="text-sm font-medium text-secondary truncate">{label}</p>
+                <p className="text-lg text-primary mt-1">{value}</p>
                 
                 {hasChange ? (
                 <div className={`flex items-center gap-1 text-[12px] whitespace-nowrap mt-1 ${changeColor}`}>
@@ -56,16 +54,21 @@ function KpiCard({
                     {isPositive && "+"}
                     {changePercent}%
                     </span>
-                    <span className="text-gray-500">vs prev.</span>
+                    <span className="text-tertiary">vs prev.</span>
                 </div>
                 ) : (
-                <div className="text-[12px] text-gray-400 mt-1">No comparison data</div>
+                <div className="text-[12px] text-tertiary mt-1">No comparison data</div>
                 )}
             </div>
 
             {/* Kolom 2: Icon */}
             {icon && (
-                <div className="w-10 h-10 rounded-full bg-blue-50 shadow-md flex items-center justify-center text-blue-600">
+                <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                style={{
+                    backgroundColor: `${iconColor || 'var(--accent-primary)'}20`,
+                    color: iconColor || 'var(--accent-primary)',
+                    boxShadow: `0 0 20px ${iconColor || 'var(--accent-primary)'}20`
+                }}>
                 {icon}
                 </div>
             )}

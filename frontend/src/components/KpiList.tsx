@@ -11,6 +11,7 @@ interface KpiItem {
     changePercent?: number | null;
     icon?: ReactNode;
     sparklineData?: SparklineData[];
+    iconColor?: string;
     sparklineColor?: string;
 }
 
@@ -28,6 +29,7 @@ function KpiList ({ items } : KpiListProps) {
                     value={item.value}
                     changePercent={item.changePercent}
                     icon={item.icon}
+                    iconColor={item.iconColor}
                     sparklineData={item.sparklineData}
                     sparklineColor={item.sparklineColor}
                 />

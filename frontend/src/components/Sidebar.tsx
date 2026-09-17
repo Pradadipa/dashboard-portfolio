@@ -1,5 +1,4 @@
 import { LayoutDashboard } from "lucide-react";
-import Header from "./Header";
 
 interface NavItem {
     label: string;
@@ -13,10 +12,11 @@ const navItems: NavItem[] = [
 
 function Sidebar() {
     return (
-        <div className="flex-none w-56 h-full flex flex-col bg-white border-r border-gray-200">
+        <div className="flex-none w-56 h-full flex flex-col bg-card border-r border-subtle">
             {/* Brand */}
-            <div className="flex-none px-3 py-2 border-b border-gray-200">
-                <Header title="Business Dashboard" subtitle="Real-time revenue metrics" />
+            <div className="flex-none px-3 py-3 border-b border-subtle">
+                <h1 className="text-base font-bold text-primary">Business Dashboard</h1>
+                <p className="text-xs text-tertiary mt-0.5">Real-time revenue metrics</p>
             </div>
 
             {/* Nav items */}
@@ -26,8 +26,8 @@ function Sidebar() {
                         key={item.label}
                         className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium cursor-pointer transition-colors ${
                             item.active
-                                ? "bg-blue-50 text-blue-600"
-                                : "text-gray-600 hover:bg-gray-50"
+                                ? "bg-card-hover text-[var(--accent-primary)]"
+                                : "text-secondary hover:bg-card-hover hover:text-primary"
                         }`}
                     >
                         {item.icon}

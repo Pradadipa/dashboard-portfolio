@@ -82,14 +82,14 @@ function RevenueTrendChart({ startDate, endDate, granularity } : RevenueTrendCha
         fetchData();
     }, [ startDate, endDate, granularity ]);
 
-    if (loading) 
+    if (loading)
         return (
-            <div className="bg-white p-6 rounded-lg shadow text-gray-600">
+            <div className="bg-kpi-card border border-subtle p-6 rounded-lg shadow text-tertiary">
                 Loading Chart ...
             </div>
         );
 
-    if (error) 
+    if (error)
         return (
             <div className="bg-red-50 border border-red-200 p-6 rounded-lg text-red-700">
                 Error: {error}
@@ -98,7 +98,7 @@ function RevenueTrendChart({ startDate, endDate, granularity } : RevenueTrendCha
 
     if(!data || data.data_points.length == 0)
         return (
-            <div className="bg-white p-6 rounded-lg shadoww text-gray-600">
+            <div className="bg-kpi-card border border-subtle p-6 rounded-lg shadow text-tertiary">
                 No trend data available
             </div>
         );
@@ -127,11 +127,11 @@ function RevenueTrendChart({ startDate, endDate, granularity } : RevenueTrendCha
         : "text-gray-500"
 
     return (
-        <div className="bg-white p-3 rounded-lg shadow h-full flex flex-col min-h-0">
+        <div className="bg-kpi-card p-3 border border-subtle rounded-lg hover:bg-card-hover transition-colors shadow h-full flex flex-col min-h-0">
             {/* Header */}
             <div className="flex-none mb-1">
                 <div>
-                    <h2 className="text-sm font-semibold text-gray-900">
+                    <h2 className="text-sm font-medium text-secondary">
                         Revenue Trend
                     </h2>
                     {/* <p className="text-sm text-gray-600 mt-1">
@@ -140,7 +140,7 @@ function RevenueTrendChart({ startDate, endDate, granularity } : RevenueTrendCha
                 </div>
 
                 {/* Big Value */}
-                <p className="text-lg font-bold text-gray-900">
+                <p className="text-lg text-primary">
                     ${Number(data.current_total_net_sales).toLocaleString()}
                 </p>
 
@@ -151,7 +151,7 @@ function RevenueTrendChart({ startDate, endDate, granularity } : RevenueTrendCha
                             {isPositive && "+"}
                             {overallChange}% YoY
                         </span>
-                        <span className="text-gray-500">
+                        <span className="text-tertiary">
                             vs same period last year
                         </span>
                     </div>
@@ -165,19 +165,19 @@ function RevenueTrendChart({ startDate, endDate, granularity } : RevenueTrendCha
                     {/* Definisi gradient */}
                     <defs>
                         <linearGradient id="currentGradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4} />
-                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                            <stop offset="50%" stopColor="#ce6f09" stopOpacity={0.6} />
+                            <stop offset="95%" stopColor="#F88F22" stopOpacity={0} />
                         </linearGradient>
                         <linearGradient id="previousGradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#94a3b8" stopOpacity={0.2} />
+                            <stop offset="10%" stopColor="#94a3b8" stopOpacity={0.2} />
                             <stop offset="95%" stopColor="#94a3b8" stopOpacity={0} />
                         </linearGradient>
                     </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
                 <XAxis
                     dataKey="date"
-                    stroke="#6b7280"
-                    tick={{ fontSize: 10 }}
+                    stroke="var(--text-tertiary)"
+                    tick={{ fontSize: 10, fill: "var(--text-tertiary)" }}
                     tickFormatter={(value) => {
                         const date = new Date(value);
                         const day = date.getDate();
@@ -188,8 +188,8 @@ function RevenueTrendChart({ startDate, endDate, granularity } : RevenueTrendCha
                     }}
                 />
                 <YAxis
-                    stroke="#6b7280"
-                    tick={{ fontSize: 10 }}
+                    stroke="var(--text-tertiary)"
+                    tick={{ fontSize: 10, fill: "var(--text-tertiary)" }}
                     tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
                 />
                 <Tooltip
@@ -198,33 +198,33 @@ function RevenueTrendChart({ startDate, endDate, granularity } : RevenueTrendCha
 
                     const point = payload[0].payload as ChartDataPoint;
                     return (
-                        <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3">
-                        <p className="text-sm font-medium text-gray-900 mb-2">
+                        <div className="bg-card-hover border border-subtle rounded-lg shadow-lg p-3">
+                        <p className="text-sm font-medium text-primary mb-2">
                             {point.date}
                         </p>
                         <div className="space-y-1">
                             <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full bg-blue-500" />
-                            <span className="text-xs text-gray-600">Current:</span>
-                            <span className="text-sm font-semibold text-gray-900">
+                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: "#F88F22" }} />
+                            <span className="text-xs text-secondary">Current:</span>
+                            <span className="text-sm font-semibold text-primary">
                                 ${point.current.toLocaleString()}
                             </span>
                             </div>
                             <div className="flex items-center gap-2">
                             <div className="w-3 h-3 rounded-full bg-gray-400" />
-                            <span className="text-xs text-gray-600">Previous:</span>
-                            <span className="text-sm font-semibold text-gray-700">
+                            <span className="text-xs text-secondary">Previous:</span>
+                            <span className="text-sm font-semibold text-secondary">
                                 ${point.previous.toLocaleString()}
                             </span>
                             </div>
                             {point.changePercent !== null && (
                             <div
-                                className={`text-xs font-medium mt-2 pt-2 border-t border-gray-100 ${
+                                className={`text-xs font-medium mt-2 pt-2 border-t border-subtle ${
                                 point.changePercent > 0
                                     ? "text-green-600"
                                     : point.changePercent < 0
                                     ? "text-red-600"
-                                    : "text-gray-500"
+                                    : "text-tertiary"
                                 }`}
                             >
                                 {point.changePercent > 0 && "+"}
@@ -237,7 +237,9 @@ function RevenueTrendChart({ startDate, endDate, granularity } : RevenueTrendCha
                     }}
                 />
                 <Legend
-                    verticalAlign="top" align="right" wrapperStyle={{ fontSize: 10 }} height={16} iconSize={8}
+                    verticalAlign="top" align="right"
+                    wrapperStyle={{ fontSize: 10, color: "var(--text-secondary)" }}
+                    height={16} iconSize={8}
                 />
 
                 {/* Previous area (behind) */}
@@ -245,8 +247,8 @@ function RevenueTrendChart({ startDate, endDate, granularity } : RevenueTrendCha
                     type="monotone"
                     dataKey="previous"
                     stroke="#94a3b8"
-                    strokeWidth={2}
-                    strokeDasharray="5 5"
+                    strokeWidth={1}
+                    strokeDasharray="2 3"
                     fill="url(#previousGradient)"
                     name="Previous Year"
                 />
@@ -255,8 +257,8 @@ function RevenueTrendChart({ startDate, endDate, granularity } : RevenueTrendCha
                 <Area
                     type="monotone"
                     dataKey="current"
-                    stroke="#3b82f6"
-                    strokeWidth={2}
+                    stroke="#F88F22"
+                    strokeWidth={1}
                     fill="url(#currentGradient)"
                     name="Current Period"
                 />

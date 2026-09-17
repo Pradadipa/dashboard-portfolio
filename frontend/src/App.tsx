@@ -1,4 +1,5 @@
 import Sidebar from "./components/Sidebar";
+import Header from "./components/Header";
 import DateRangePicker from "./components/DateRangePicker";
 import GranularitySelector, {type Granularity} from "./components/GranularitySelector";
 import RevenueSummaryCards from "./components/RevenueSummaryCards";
@@ -18,13 +19,13 @@ const defaultStartDate = formatDate(new Date("2026-07-01"));
 const defaultEndDate = formatDate(new Date("2026-07-31"));
 
 // Temporary placeholder
-function PlaceholderBox({ label, color } : {label:string; color: string}) {
-  return (
-    <div className={`h-full w-full min-h-0 rounded-lg shadow flex items-center justify-center text-white font-semibold ${color}`}>
-      {label}
-    </div>
-  );
-}
+// function PlaceholderBox({ label, color } : {label:string; color: string}) {
+//   return (
+//     <div className={`h-full w-full min-h-0 rounded-lg shadow flex items-center justify-center text-white font-semibold ${color}`}>
+//       {label}
+//     </div>
+//   );
+// }
 
 function App() {
   const [startDate, setStartDate] = useState(defaultStartDate);
@@ -33,7 +34,7 @@ function App() {
 
   return (
     // h-screen = tinggi persis viewport; flex-row = sidebar kiri + konten kanan
-    <div className="h-screen flex overflow-hidden bg-gray-50">
+    <div className="h-screen flex overflow-hidden" style={{ backgroundColor: 'var(--bg-page)' }}>
 
       {/* SIDEBAR — flex-none, lebar tetap */}
       <Sidebar />
@@ -42,7 +43,11 @@ function App() {
       <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
 
         {/* BAR ATAS — flex-none = tinggi natural, gak ikut dikompres */}
-        <div className="flex-none flex items-center justify-end gap-2 px-3 py-1.5 bg-white shadow-sm">
+        <div className="flex-none flex items-center justify-between gap-2 px-3 py-2 bg-kpi-card border-b border-subtle shadow-sm">
+          <Header
+            title="Good morning, Prada 🖐"
+            subtitle="Here's what happening with your business"
+          />
           <DateRangePicker
             startDate={startDate}
             endDate={endDate}
@@ -67,7 +72,7 @@ function App() {
 
           {/* BARIS BAWAH: Top Products (2) bersebelahan dengan Revenue by Channel (1) */}
           <div className="min-h-0 grid grid-cols-[1fr_1fr] gap-2">
-            <div className="min-h-0 bg-white rounded-lg shadow p-2">
+            <div className="min-h-0 h-full flex flex-col overflow-hidden">
               <TopProductsWidget startDate={startDate} endDate={endDate} />
             </div>
             <RevenueByChannelChart startDate={startDate} endDate={endDate} />

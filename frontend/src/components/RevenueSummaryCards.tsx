@@ -2,12 +2,8 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import KpiList from "./KpiList";
 import {
-    DollarSign,
     ShoppingCart,
-    RotateCcw,
-    Package,
     TrendingUp as TrendingUpIcon,
-    icons,
     Wallet,
     Shirt,
     CircleStar,
@@ -92,6 +88,7 @@ function RevenueSummaryCards({ startDate, endDate } : RevenueSummaryCardsProps) 
                 ? Number(data.net_sales_change_percent)
                 : null,
             icon: <Wallet size={18} />,
+            iconColor: "#F88F22",
             sparklineData:toSparklineData(data.net_sales_sparkline),
             sparklineColor: "#10b981"
         },
@@ -102,6 +99,7 @@ function RevenueSummaryCards({ startDate, endDate } : RevenueSummaryCardsProps) 
                 ? Number(data.total_sales_change_percent)
                 : null,
             icon: <TrendingUpIcon size={18} />,
+            iconColor: "#FBB931",
             sparklineData:toSparklineData(data.total_sales_sparkline),
             sparklineColor: "#10b981"
         },
@@ -112,6 +110,7 @@ function RevenueSummaryCards({ startDate, endDate } : RevenueSummaryCardsProps) 
                 ? Number(data.total_qty_change_percent)
                 : null,
             icon: <Shirt size={18} />,
+            iconColor: "#EA6113",
             // sparklineData: toSparklineData(data.total_qty_sparkline),
             sparklineColor: "#ef4444",  // red
         },
@@ -122,8 +121,9 @@ function RevenueSummaryCards({ startDate, endDate } : RevenueSummaryCardsProps) 
                 ? Number(data.orders_change_percent)
                 : null,
             icon: <ShoppingCart size={18} />,
-            sparklineData:toSparklineData(data.orders_sparkline),
-            sparklineColor: "#10b981"
+            iconColor: "#FFE3B3"
+            // sparklineData:toSparklineData(data.orders_sparkline),
+            // sparklineColor: "#10b981"
         },
         { 
             label: "AOV", 
@@ -132,13 +132,14 @@ function RevenueSummaryCards({ startDate, endDate } : RevenueSummaryCardsProps) 
                 ? Number(data.aov_change_percent)
                 : null,
             icon: <CircleStar size={18} />,
-            sparklineData:toSparklineData(data.aov_sparkline),
-            sparklineColor: "#10b981"
+            iconColor: "#F88F22"
+            // sparklineData:toSparklineData(data.aov_sparkline),
+            // sparklineColor: "#10b981"
         },
     ];
 
     return (
-        <div className="bg-white p-3 rounded-lg shadow">
+        <div className="bg-card p-3 rounded-lg">
             <KpiList items={kpiItems} />
         </div>
     );

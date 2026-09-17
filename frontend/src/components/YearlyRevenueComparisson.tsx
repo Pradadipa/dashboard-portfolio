@@ -60,7 +60,7 @@ function YearlyRevenueComparison() {
 
     if (loading)
         return (
-            <div className="bg-white p-6 rounded-lg shadow text-gray-600">
+            <div className="bg-kpi-card border border-subtle p-6 rounded-lg shadow text-tertiary">
                 Loading yearly comparison...
             </div>
         );
@@ -88,18 +88,18 @@ function YearlyRevenueComparison() {
         ? "text-green-600"
         : isNegative
         ? "text-red-600"
-        : "text-gray-500";
+        : "text-tertiary";
 
     return (
-        <div className="bg-white p-3 rounded-lg shadow h-full flex flex-col min-h-0">
+        <div className="bg-kpi-card p-3 border border-subtle rounded-lg hover:bg-card-hover transition-colors shadow h-full flex flex-col min-h-0">
         {/* Header: Label */}
         <div className="mb-1 flex-none">
-                <h2 className="text-sm font-semibold text-gray-900">
+                <h2 className="text-sm font-medium text-secondary">
                     Monthly Revenue
                 </h2>
 
             {/* Big Value */}
-            <p className="text-lg font-bold text-gray-900">
+            <p className="text-lg text-primary">
                 ${Number(data.current_year_total).toLocaleString()}
             </p>
 
@@ -110,7 +110,7 @@ function YearlyRevenueComparison() {
                     {isPositive && "+"}
                     {yoyChange}% YoY
                 </span>
-                <span className="text-gray-500">
+                <span className="text-tertiary">
                     vs {data.previous_year}
                 </span>
             </div>
@@ -121,34 +121,43 @@ function YearlyRevenueComparison() {
         <div className="flex-1 min-h-0">
         <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-            <XAxis dataKey="month" stroke="#6b7280" tick={{ fontSize: 10 }} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
+            <XAxis dataKey="month" stroke="var(--text-tertiary)" tick={{ fontSize: 10, fill: "var(--text-tertiary)" }} />
             <YAxis
-                stroke="#6b7280"
-                tick={{ fontSize: 10 }}
+                stroke="var(--text-tertiary)"
+                tick={{ fontSize: 10, fill: "var(--text-tertiary)" }}
                 width={36}
                 tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
             />
             <Tooltip
                 formatter={(value) => `$${Number(value).toLocaleString()}`}
                 contentStyle={{
-                    backgroundColor: "white",
-                    border: "1px solid #e5e7eb",
+                    backgroundColor: "var(--bg-card-hover)",
+                    border: "1px solid var(--border-color-strong)",
                     borderRadius: "8px",
                     fontSize: 12,
+                    color: "var(--text-primary)",
                 }}
+                labelStyle={{ color: "var(--text-primary)" }}
+                itemStyle={{ color: "var(--text-secondary)" }}
             />
-            <Legend verticalAlign="top" align="right" wrapperStyle={{ fontSize: 10 }} height={16} iconSize={8} />
+            <Legend
+                verticalAlign="top"
+                align="right"
+                wrapperStyle={{ fontSize: 10, color: "var(--text-secondary)" }}
+                height={16}
+                iconSize={8}
+            />
             <Bar
                 dataKey="previousYear"
-                fill="#777777"
+                fill="#cac8c79a"
                 opacity={0.2}
                 name={`${data.previous_year}`}
                 radius={[4, 4, 0, 0]}
             />
             <Bar
                 dataKey="currentYear"
-                fill="#3b82f6"
+                fill="#ff7c10"
                 name={`${data.current_year}`}
                 radius={[4, 4, 0, 0]}
             />
