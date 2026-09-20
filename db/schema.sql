@@ -159,7 +159,7 @@ CREATE TABLE IF NOT EXISTS shopify.order_line_items (
     -- NOT derived from refund restockType: 'RETURN' has been extinct since
     -- early 2024 (Redo writes NO_RESTOCK and records the Return separately),
     -- so a restockType-based rule reads 0 for every recent period.
-    -- Validated 2026-07-30 over 1,130 refund lines — see
+    -- Validated against real refund lines — see
     -- docs/net-sales-definition.md §4.2.
     returned_quantity      INTEGER NOT NULL DEFAULT 0,
     is_returned            BOOLEAN GENERATED ALWAYS AS (returned_quantity > 0) STORED,
@@ -190,7 +190,7 @@ CREATE INDEX IF NOT EXISTS idx_line_items_sku      ON shopify.order_line_items (
 CREATE TABLE IF NOT EXISTS shopify.refund_line_items (
     -- surrogate key: (refund_id, line_item_id) is NOT unique — one refund can
     -- legitimately hold several entries for the same line (e.g. a 2-unit line
-    -- refunded as two 1-unit events; verified in production data 2026-07-11)
+    -- refunded as two 1-unit events; verified against real data)
     id           BIGINT  GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     refund_id    BIGINT  NOT NULL,                -- from Refund gid
     order_id     BIGINT  NOT NULL
@@ -212,8 +212,8 @@ CREATE INDEX IF NOT EXISTS idx_refund_lines_order     ON shopify.refund_line_ite
 -- money WITHOUT allocating it to any line item — staff type an amount, a
 -- returns app (Redo) issues it, or it is goodwill for a missed discount code.
 -- Those refunds have an empty refundLineItems, so refund_line_items holds
--- nothing for them and the money is invisible at line grain. Measured
--- 2026-07-27: 578 orders / $39,953 of refunds with no line allocation at all.
+-- nothing for them and the money is invisible at line grain. Measurable in
+-- practice: some orders carry refunds with no line allocation at all.
 --
 -- total_refunded is the CASH returned (product + tax + shipping), which is
 -- 0.00 when a return is settled as store credit / gift card / exchange.
@@ -239,8 +239,8 @@ CREATE INDEX IF NOT EXISTS idx_refunds_order     ON shopify.refunds (order_id);
 -- The two columns measure DIFFERENT things and must not be netted naively:
 --   total_refunded     cash actually returned (Refund.totalRefundedSet). It is
 --                      0.00 whenever a return is settled as store credit, a
---                      gift card or an exchange — 53 of 184 refunds in a June
---                      2026 sample had goods come back with zero cash out.
+--                      gift card or an exchange — a sizeable share of refunds
+--                      had goods come back with zero cash out.
 --   allocated_subtotal product value of the lines the refund names, excluding
 --                      tax and shipping (SUM of refund_line_items.subtotal).
 -- Subtracting one from the other yields negative noise for ~1/3 of refunds.
@@ -371,7 +371,7 @@ GROUP BY s.session_date, o.orders, o.net_revenue;
 -- Regex (!~) rather than LIKE so the text carries no '%' — schema.sql is
 -- executed unparameterised today, but a stray '%' becomes a landmine the moment
 -- anything runs it through psycopg2. Verified equivalent to
--- `NOT LIKE 'ROUTEINS%'` over all 236,487 line items (2026-07-31).
+-- `NOT LIKE 'ROUTEINS%'` over every line item.
 -- ============================================================================
 CREATE OR REPLACE VIEW shopify.v_net_sales_lines AS
 SELECT
