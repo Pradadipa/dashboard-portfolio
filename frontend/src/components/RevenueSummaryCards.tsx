@@ -52,7 +52,7 @@ function RevenueSummaryCards({ startDate, endDate } : RevenueSummaryCardsProps) 
         const fetchData = async () => {
             try {
                 const response =  await axios.get<RevenueSummary>(
-                    "http://localhost:8000/api/revenue/summary",
+                    "/api/revenue/summary",
                     {
                         params: {
                             start_date: startDate,

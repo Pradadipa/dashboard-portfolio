@@ -45,7 +45,7 @@ function TopProductsWidget({ startDate, endDate }: TopProductWidgetProps) {
             setError(null);
             try {
                 const response = await axios.get<TopProductsResponse>(
-                    "http://localhost:8000/api/products/top",
+                    "/api/products/top",
                     {
 
                         params: {

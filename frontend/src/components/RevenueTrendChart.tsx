@@ -61,7 +61,7 @@ function RevenueTrendChart({ startDate, endDate, granularity } : RevenueTrendCha
             setError(null);
             try {
                 const response = await axios.get<RevenueTrend>(
-                    "http://localhost:8000/api/revenue/trend",
+                    "/api/revenue/trend",
                     {
                         params: {
                             start_date: startDate,

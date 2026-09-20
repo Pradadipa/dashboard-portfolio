@@ -44,7 +44,7 @@ function YearlyRevenueComparison() {
         const fetchData = async () => {
             try {
                 const response = await axios.get<YearlyRevenueComparisonData>(
-                    "http://localhost:8000/api/revenue/yearly-comparison"
+                    "/api/revenue/yearly-comparison"
                 );
                 setData(response.data);
             } catch (err) {

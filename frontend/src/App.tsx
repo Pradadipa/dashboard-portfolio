@@ -1,7 +1,7 @@
 import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
 import DateRangePicker from "./components/DateRangePicker";
-import GranularitySelector, {type Granularity} from "./components/GranularitySelector";
+import type { Granularity } from "./components/GranularitySelector";
 import RevenueSummaryCards from "./components/RevenueSummaryCards";
 import RevenueByChannelChart from "./components/RevenueByChannelChart";
 import RevenueTrendChart from "./components/RevenueTrendChart";
@@ -30,7 +30,7 @@ const defaultEndDate = formatDate(new Date("2026-07-31"));
 function App() {
   const [startDate, setStartDate] = useState(defaultStartDate);
   const [endDate, setEndDate] = useState(defaultEndDate);
-  const [granularity, setGranularity ] = useState<Granularity>("day");
+  const [granularity] = useState<Granularity>("day");
 
   return (
     // h-screen = tinggi persis viewport; flex-row = sidebar kiri + konten kanan

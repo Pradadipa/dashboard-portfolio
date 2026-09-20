@@ -60,7 +60,7 @@ function RevenueByChannelChart({ startDate, endDate }: RevenueByChannelChartProp
         const fetchData = async () => {
             try {
                 const response = await axios.get<RevenueByChannel>(
-                    "http://localhost:8000/api/revenue/by-channel",
+                    "/api/revenue/by-channel",
                     {
                         params: {
                             start_date: startDate,
