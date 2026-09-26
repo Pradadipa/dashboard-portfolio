@@ -47,7 +47,7 @@ These are the parts I'm most proud of as an analyst — the "why" behind the num
 - **Refunds are booked when they happen.** A return lands in the month it was processed, not back in the month of the original order — matching how the business actually sees its cash.
 - **Business timezone, not server timezone.** All dates are bucketed in `America/New_York`, the store's timezone.
 - **Money is never a float.** Monetary values use `Decimal` end-to-end to avoid rounding errors.
-- **Anonymized public demo.** [`db/anonymize_demo.sql`](db/anonymize_demo.sql) turns a copy of the database into a demo dataset: customer, product, campaign, and review data are replaced, all money is scaled by one constant (so ROAS and AOV stay realistic), and the script verifies its own output and rolls back if any check fails.
+- **Anonymized public demo.** [`db/anonymize_demo.sql`](db/anonymize_demo.sql) turns a copy of the database into a demo dataset: customer, product, campaign, and review data are replaced, all money is scaled by one constant (so ROAS and AOV stay realistic), and the script verifies its own output and rolls back if any check fails. A second step, [`db/perturb_demo.sql`](db/perturb_demo.sql), then breaks the 1:1 fingerprint with the source: it drops a varying share of orders, gives each product its own price factor, diversifies line quantities, and re-derives order totals, refunds, and customer stats so every view still adds up (GA4/Ads tables are untouched).
 
 ---
 
@@ -140,6 +140,7 @@ frontend/
 db/
   schema.sql         # database schema and views
   anonymize_demo.sql # demo data anonymization
+  perturb_demo.sql   # makes the anonymized demo differ structurally from the source
 docs/
   deploy-gcp.md
 ```
