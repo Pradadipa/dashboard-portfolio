@@ -240,6 +240,10 @@ class YearlyRevenueComparison(BaseModel):
     
     current_year: int = Field(..., description="Tahun sekarang")
     previous_year: int = Field(..., description="Tahun lalu")
+    ytd_end_date: date_type = Field(
+        ...,
+        description="Tanggal data terbaru; totals & YoY = 1 Jan s/d tanggal ini vs periode sama tahun lalu",
+    )
     data: list[MonthlyRevenue] = Field(
         ...,
         description="Data revenue per bulan (12 entries)",

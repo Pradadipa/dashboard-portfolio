@@ -23,6 +23,7 @@ interface MonthlyRevenue {
 interface YearlyRevenueComparisonData {
     current_year: number;
     previous_year: number;
+    ytd_end_date: string;
     data: MonthlyRevenue[];
     current_year_total: string;
     previous_year_total: string;
@@ -96,6 +97,9 @@ function YearlyRevenueComparison() {
         <div className="mb-1 flex-none">
                 <h2 className="text-sm font-medium text-secondary">
                     Monthly Revenue
+                    <span className="ml-1 text-tertiary font-normal">
+                        ({data.current_year} YTD)
+                    </span>
                 </h2>
 
             {/* Big Value */}
@@ -111,7 +115,7 @@ function YearlyRevenueComparison() {
                     {yoyChange}% YoY
                 </span>
                 <span className="text-tertiary">
-                    vs {data.previous_year}
+                    {data.current_year} YTD vs {data.previous_year} YTD
                 </span>
             </div>
             )}

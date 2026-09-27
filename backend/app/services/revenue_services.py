@@ -434,8 +434,15 @@ async def get_yearly_revenue_comparison(
     Berguna untuk widget YoY comparison chart.
     Data yang di-return: 12 bulan × 2 tahun.
     """
-    current_year = date(2026,1,1).year
-    previous_year = current_year -1
+    # Anchor on the latest date with data, not a hardcoded year: the current
+    # year is usually only partially synced.
+    latest = (await db.execute(
+        text("SELECT MAX(date_key) FROM shopify.v_net_sales_lines")
+    )).scalar_one()
+    ytd_end = latest or date.today()
+    current_year = ytd_end.year
+    previous_year = current_year - 1
+    previous_ytd_end = ytd_end - relativedelta(years=1)
 
     # Query: aggregate revenue per (year, month)
     # Cover 2 years: current + previous
@@ -472,8 +479,6 @@ async def get_yearly_revenue_comparison(
 
     # Build response
     monthly_data = []
-    current_year_total = Decimal("0")
-    previous_year_total = Decimal("0")
 
     for month_num in range(1,13):
         current_rev = revenue_lookup.get((current_year, month_num), Decimal("0"))
@@ -486,10 +491,22 @@ async def get_yearly_revenue_comparison(
             previous_year_revenue=previous_rev.quantize(Decimal("0.01"))
         ))
 
-        current_year_total += current_rev
-        previous_year_total += previous_rev
+    # Totals are YTD: Jan 1 -> ytd_end vs the same span last year, so a partial
+    # current year isn't compared against a full previous year.
+    totals = (await db.execute(
+        text("""
+            SELECT
+                COALESCE(SUM(amount) FILTER (
+                    WHERE date_key >= make_date(:cy,1,1) AND date_key <= :cy_end), 0) AS cur,
+                COALESCE(SUM(amount) FILTER (
+                    WHERE date_key >= make_date(:py,1,1) AND date_key <= :py_end), 0) AS prev
+            FROM shopify.v_net_sales_lines
+        """),
+        {"cy": current_year, "cy_end": ytd_end, "py": previous_year, "py_end": previous_ytd_end},
+    )).one()
+    current_year_total = Decimal(totals.cur)
+    previous_year_total = Decimal(totals.prev)
 
-        # YoY change
     yoy_change = None
     if previous_year_total > 0:
         yoy_change = (
@@ -499,6 +516,7 @@ async def get_yearly_revenue_comparison(
     return YearlyRevenueComparison(
         current_year=current_year,
         previous_year=previous_year,
+        ytd_end_date=ytd_end,
         data=monthly_data,
         current_year_total=current_year_total.quantize(Decimal("0.01")),
         previous_year_total=previous_year_total.quantize(Decimal("0.01")),
