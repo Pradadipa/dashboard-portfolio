@@ -7,15 +7,16 @@ class TopProduct(BaseModel):
     product_id: int = Field(..., description="Shopify product id")
     product_name: str = Field(..., description="Product name")
     revenue: Decimal = Field(..., description="Total revenue", ge=0)
-    units_sold: int = Field(..., description="Total unit sold", ge=0)
+    units_sold: int = Field(..., description="Net units sold (bisa negatif kalau return > sale)")
     previous_revenue: Decimal = Field(
         default=Decimal("0"),
         description="Revenue di periode sebelumnya (durasi sama)",
     )
     previous_units_sold: int = Field(
         default=0,
-        description="Units sold di periode sebelumnya",
-        ge=0,
+        # Tanpa ge=0: net units bisa negatif kalau return (dibukukan di tanggal refund)
+        # melebihi penjualan di periode itu.
+        description="Net units sold di periode sebelumnya (bisa negatif)",
     )
     revenue_change_percent: Decimal | None = Field(
         default=None,

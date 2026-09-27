@@ -6,9 +6,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 def calc_change_percent(current: Decimal, previous: Decimal) -> Decimal | None:
     """
     Hitung % change vs previous.
-    Return None kalau previous = 0 (tidak bisa hitung growth).
+    Return None kalau previous <= 0 (tidak bisa hitung growth; previous bisa
+    negatif kalau return di periode itu melebihi penjualan).
     """
-    if previous == 0:
+    if previous <= 0:
         return None
     change = ((current - previous) / previous) * 100
     return change.quantize(Decimal("0.01"))
