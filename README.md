@@ -120,7 +120,7 @@ cp .env.example .env          # set POSTGRES_PASSWORD
 docker compose up -d --build  # http://localhost
 ```
 
-See [`docs/deploy-gcp.md`](docs/deploy-gcp.md) for building the anonymized demo database and deploying to a GCP VM.
+See [`docs/deploy-vps.md`](docs/deploy-vps.md) for building the anonymized demo database and deploying to a VPS behind nginx + HTTPS.
 
 ---
 
@@ -142,7 +142,7 @@ db/
   anonymize_demo.sql # demo data anonymization
   perturb_demo.sql   # makes the anonymized demo differ structurally from the source
 docs/
-  deploy-gcp.md
+  deploy-vps.md
 ```
 
 ---
@@ -159,7 +159,7 @@ I started this project on 4 August 2026 with one year of Python and only basic H
 
 ## Roadmap
 
-- [ ] Public live demo on GCP
+- [ ] Public live demo on a VPS
 - [ ] Annotations shown on the trend chart
 - [ ] Ads and GA4 widgets (ROAS, sessions, conversion rate)
 - [ ] Authentication for private dashboards
