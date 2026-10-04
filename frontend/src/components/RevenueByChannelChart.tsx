@@ -125,10 +125,10 @@ function RevenueByChannelChart({ startDate, endDate }: RevenueByChannelChartProp
             Revenue by Channel
         </h2>
 
-        {/* Grid: donut kiri, table kanan */}
-        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 gap-3 items-center">
+        {/* Grid: donut kiri, table kanan (HP: donut atas, table bawah) */}
+        <div className="flex-1 min-h-0 grid grid-cols-1 grid-rows-[minmax(0,1fr)_auto] sm:grid-cols-2 sm:grid-rows-1 gap-3 items-center">
             {/* Donut chart */}
-            <div className="relative h-full min-h-0">
+            <div className="relative h-full min-h-0 self-stretch">
                 <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                     <Pie
@@ -176,7 +176,7 @@ function RevenueByChannelChart({ startDate, endDate }: RevenueByChannelChartProp
                 </div>
             </div>
                 {/* Legend table */}
-                <div className="overflow-y-auto divide-y divide-subtle border border-subtle rounded-lg p-2 shadow-sm">
+                <div className="max-h-40 sm:max-h-full overflow-y-auto divide-y divide-subtle border border-subtle rounded-lg p-2 shadow-sm">
                     {[...dataWithPercentage]
                         .sort((a, b) => b.revenue - a.revenue)
                         .map((item) => (

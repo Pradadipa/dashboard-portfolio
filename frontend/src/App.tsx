@@ -33,17 +33,18 @@ function App() {
   const [granularity] = useState<Granularity>("day");
 
   return (
-    // h-screen = tinggi persis viewport; flex-row = sidebar kiri + konten kanan
-    <div className="h-screen flex overflow-hidden" style={{ backgroundColor: 'var(--bg-page)' }}>
+    // Desktop (lg+): h-screen = tinggi persis viewport, semua widget muat 1 layar.
+    // HP/tablet: tinggi bebas, halaman di-scroll, widget ditumpuk.
+    <div className="min-h-screen lg:h-screen flex lg:overflow-hidden" style={{ backgroundColor: 'var(--bg-page)' }}>
 
-      {/* SIDEBAR — flex-none, lebar tetap */}
+      {/* SIDEBAR — flex-none, lebar tetap; disembunyikan di bawah lg */}
       <Sidebar />
 
       {/* KOLOM KANAN — sisa lebar, flex-col seperti sebelumnya */}
-      <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+      <div className="flex-1 min-w-0 flex flex-col lg:overflow-hidden">
 
         {/* BAR ATAS — flex-none = tinggi natural, gak ikut dikompres */}
-        <div className="flex-none flex items-center justify-between gap-2 px-3 py-2 bg-kpi-card border-b border-subtle shadow-sm">
+        <div className="flex-none flex flex-wrap items-center justify-between gap-2 px-3 py-2 bg-kpi-card border-b border-subtle shadow-sm">
           <Header
             title="Good morning, Prada 🖐"
             subtitle="Here's what happening with your business"
@@ -61,21 +62,28 @@ function App() {
           <RevenueSummaryCards startDate={startDate} endDate={endDate} />
         </div>
 
-         {/* SISA RUANG — flex-1 = "ambil semua sisa tinggi", min-h-0 = "boleh dikompres, jangan maksa ukuran alami" */}
-        <div className="flex-1 min-h-0 grid grid-rows-[1fr_1fr] gap-2 px-3 pb-2 pt-2">
+         {/* SISA RUANG — lg: flex-1 = "ambil semua sisa tinggi", min-h-0 = "boleh dikompres, jangan maksa ukuran alami".
+             Di bawah lg tiap widget dapat tinggi tetap (h-80 dst.) karena chart butuh parent bertinggi pasti. */}
+        <div className="flex-1 min-h-0 flex flex-col gap-2 px-3 pb-2 pt-2 lg:grid lg:grid-rows-[1fr_1fr]">
 
-          {/* BARIS ATAS: Revenue Trend (1) bersebelahan dengan Revenue Overview (1) */}
-          <div className="min-h-0 grid grid-cols-[3fr_2fr] gap-2">
-            <RevenueTrendChart startDate={startDate} endDate={endDate} granularity={granularity} />
-            <YearlyRevenueComparison />
+          {/* BARIS ATAS: Revenue Trend bersebelahan dengan Yearly Revenue (tablet: 2 kolom sama lebar, HP: ditumpuk) */}
+          <div className="min-h-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[3fr_2fr] gap-2">
+            <div className="h-80 lg:h-full min-h-0">
+              <RevenueTrendChart startDate={startDate} endDate={endDate} granularity={granularity} />
+            </div>
+            <div className="h-80 lg:h-full min-h-0">
+              <YearlyRevenueComparison />
+            </div>
           </div>
 
-          {/* BARIS BAWAH: Top Products (2) bersebelahan dengan Revenue by Channel (1) */}
-          <div className="min-h-0 grid grid-cols-[1fr_1fr] gap-2">
-            <div className="min-h-0 h-full flex flex-col overflow-hidden">
+          {/* BARIS BAWAH: Top Products bersebelahan dengan Revenue by Channel (ditumpuk di bawah lg) */}
+          <div className="min-h-0 grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-2">
+            <div className="h-96 lg:h-full min-h-0 flex flex-col overflow-hidden">
               <TopProductsWidget startDate={startDate} endDate={endDate} />
             </div>
-            <RevenueByChannelChart startDate={startDate} endDate={endDate} />
+            <div className="h-[28rem] sm:h-80 lg:h-full min-h-0">
+              <RevenueByChannelChart startDate={startDate} endDate={endDate} />
+            </div>
           </div>
         </div>
       </div>

@@ -12,7 +12,7 @@ const navItems: NavItem[] = [
 
 function Sidebar() {
     return (
-        <div className="flex-none w-56 h-full flex flex-col bg-card border-r border-subtle">
+        <div className="hidden lg:flex flex-none w-56 h-full flex-col bg-card border-r border-subtle">
             {/* Brand */}
             <div className="flex-none px-3 py-3 border-b border-subtle">
                 <h1 className="text-base font-bold text-primary">Business Dashboard</h1>

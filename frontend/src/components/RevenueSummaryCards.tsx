@@ -72,9 +72,9 @@ function RevenueSummaryCards({ startDate, endDate } : RevenueSummaryCardsProps) 
         fetchData();
     }, [startDate, endDate]); // refeth if props change
 
-    if (loading) return <p className="bg-white p-6 rounded-lg shadow text-gray-600">Loading Summary ...</p>;
+    if (loading) return <p className="bg-kpi-card border border-subtle p-6 rounded-lg shadow text-tertiary">Loading Summary ...</p>;
     if (error) return <p className="bg-red-50 border border-red-200 p-6 rounded-lg text-red-700">Error: {error}</p>;
-    if (!data) return <p className="bg-white p-6 rounded-lg shadow text-gray-600">No data</p>;
+    if (!data) return <p className="bg-kpi-card border border-subtle p-6 rounded-lg shadow text-tertiary">No data</p>;
 
     // Transform sparkline: string values → number
     const toSparklineData = (points: SparklinePoint[]) =>
