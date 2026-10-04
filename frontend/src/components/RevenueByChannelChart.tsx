@@ -126,7 +126,7 @@ function RevenueByChannelChart({ startDate, endDate }: RevenueByChannelChartProp
         </h2>
 
         {/* Grid: donut kiri, table kanan (HP: donut atas, table bawah) */}
-        <div className="flex-1 min-h-0 grid grid-cols-1 grid-rows-[minmax(0,1fr)_auto] sm:grid-cols-2 sm:grid-rows-1 gap-3 items-center">
+        <div className="flex-1 min-h-0 grid grid-cols-1 grid-rows-[minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] sm:grid-rows-1 gap-3 items-center">
             {/* Donut chart */}
             <div className="relative h-full min-h-0 self-stretch">
                 <ResponsiveContainer width="100%" height="100%">

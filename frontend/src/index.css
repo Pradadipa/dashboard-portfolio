@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* "desk" = big enough for the one-screen dashboard (everything fits without scrolling).
+   Landscape tablets and short laptop screens fall back to the scrolling layout.
+   Keep in sync with DESK_QUERY in App.tsx. */
+@custom-variant desk (@media (min-width: 1280px) and (min-height: 720px));
+
 /* Maps design tokens below to real Tailwind utilities
    (bg-card, hover:bg-card-hover, border-subtle, text-primary, etc.) */
 @theme {
