@@ -1,4 +1,4 @@
-import Sidebar from "./components/Sidebar";
+import Sidebar, { type Page } from "./components/Sidebar";
 import Header from "./components/Header";
 import DateRangePicker from "./components/DateRangePicker";
 import type { Granularity } from "./components/GranularitySelector";
@@ -7,6 +7,7 @@ import RevenueByChannelChart from "./components/RevenueByChannelChart";
 import RevenueTrendChart from "./components/RevenueTrendChart";
 import YearlyRevenueComparison from "./components/YearlyRevenueComparisson";
 import TopProductsWidget from "./components/TopProductsWidget";
+import CustomersPage from "./components/CustomersPage";
 import { useState } from "react";
 import { PanelLeft } from "lucide-react";
 
@@ -37,6 +38,13 @@ function App() {
   const [granularity] = useState<Granularity>("day");
   // Desktop: sidebar terbuka di awal. HP/tablet: tertutup (dibuka sebagai drawer).
   const [sidebarOpen, setSidebarOpen] = useState(() => window.matchMedia(DESK_QUERY).matches);
+  const [page, setPage] = useState<Page>("overview");
+
+  function navigate(next: Page) {
+    setPage(next);
+    // HP/tablet: tutup drawer setelah pindah halaman.
+    if (!window.matchMedia(DESK_QUERY).matches) setSidebarOpen(false);
+  }
 
   return (
     // desk (>=1280x720, lihat index.css): h-screen = tinggi persis viewport, semua widget muat 1 layar.
@@ -44,7 +52,12 @@ function App() {
     <div className="min-h-screen desk:h-screen flex desk:overflow-hidden" style={{ backgroundColor: 'var(--bg-page)' }}>
 
       {/* SIDEBAR — desk: kolom statis yang bisa ditutup; di bawah desk: drawer */}
-      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <Sidebar
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        activePage={page}
+        onNavigate={navigate}
+      />
 
       {/* KOLOM KANAN — sisa lebar, flex-col seperti sebelumnya */}
       <div className="flex-1 min-w-0 flex flex-col desk:overflow-hidden">
@@ -74,6 +87,12 @@ function App() {
           />
         </div>
 
+        {page === "customers" ? (
+          <div className="flex-1 min-h-0 p-3">
+            <CustomersPage />
+          </div>
+        ) : (
+        <>
         {/* KPI STRIP — flex-none juga, tinggi natural (5 card sejajar) */}
         <div className="px-3 pt-2 flex-none">
           <RevenueSummaryCards startDate={startDate} endDate={endDate} />
@@ -103,6 +122,8 @@ function App() {
             </div>
           </div>
         </div>
+        </>
+        )}
       </div>
     </div>
     // <div className="min-h-screen bg-gray-50">
