@@ -1,23 +1,28 @@
-import { LayoutDashboard, X } from "lucide-react";
+import { LayoutDashboard, Users, X } from "lucide-react";
+
+export type Page = "overview" | "customers";
 
 interface NavItem {
+    page: Page;
     label: string;
     icon: React.ReactNode;
-    active?: boolean;
 }
 
 const navItems: NavItem[] = [
-    { label: "Overview", icon: <LayoutDashboard size={16} />, active: true },
+    { page: "overview", label: "Overview", icon: <LayoutDashboard size={16} /> },
+    { page: "customers", label: "Customers", icon: <Users size={16} /> },
 ];
 
 interface SidebarProps {
     open: boolean;
     onClose: () => void;
+    activePage: Page;
+    onNavigate: (page: Page) => void;
 }
 
 // desk (layar besar): sidebar statis di kiri, menggeser konten.
 // Di bawah desk: drawer di atas konten + backdrop; klik backdrop/✕ untuk menutup.
-function Sidebar({ open, onClose }: SidebarProps) {
+function Sidebar({ open, onClose, activePage, onNavigate }: SidebarProps) {
     return (
         <>
             {open && (
@@ -49,19 +54,25 @@ function Sidebar({ open, onClose }: SidebarProps) {
 
                 {/* Nav items */}
                 <nav className="flex-1 min-h-0 overflow-y-auto p-2 space-y-1">
-                    {navItems.map((item) => (
-                        <div
-                            key={item.label}
-                            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium cursor-pointer transition-colors ${
-                                item.active
-                                    ? "bg-card-hover text-[var(--accent-primary)]"
-                                    : "text-secondary hover:bg-card-hover hover:text-primary"
-                            }`}
-                        >
-                            {item.icon}
-                            {item.label}
-                        </div>
-                    ))}
+                    {navItems.map((item) => {
+                        const active = item.page === activePage;
+                        return (
+                            <button
+                                key={item.page}
+                                type="button"
+                                onClick={() => onNavigate(item.page)}
+                                aria-current={active ? "page" : undefined}
+                                className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-left transition-colors ${
+                                    active
+                                        ? "bg-card-hover text-[var(--accent-primary)]"
+                                        : "text-secondary hover:bg-card-hover hover:text-primary"
+                                }`}
+                            >
+                                {item.icon}
+                                {item.label}
+                            </button>
+                        );
+                    })}
                 </nav>
             </aside>
         </>
