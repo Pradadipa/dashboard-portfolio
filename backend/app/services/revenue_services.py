@@ -396,7 +396,8 @@ async def get_revenue_by_channel(
         rows_display = rows
 
     total_revenue = sum(
-        (Decimal(row.revenue) if row.revenue else Decimal("0")) for row in rows
+        ((Decimal(row.revenue) if row.revenue else Decimal("0")) for row in rows),
+        Decimal("0"),  # start value: sum() of no rows must stay a Decimal, not int 0
     )
 
     total_orders = sum(row.orders for row in rows)

@@ -21,6 +21,7 @@ package = false
 dev = [
     "httpx>=0.28.1",
     "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
     "ruff>=0.16.1",
 ]
 
@@ -37,3 +38,14 @@ select = ["E4", "E7", "E9", "F"]
 # WIP: customer summary is not wired to a router yet. Delete these two lines when it is finished.
 "app/schemas/customer.py" = ["F401"]
 "app/services/customer_service.py" = ["F401", "F841"]
+
+[tool.pytest.ini_options]
+# Only look in tests/. test_db.py and test_service.py in this folder are manual scripts
+# (they need real data), not pytest tests.
+testpaths = ["tests"]
+pythonpath = ["."]
+asyncio_mode = "auto"
+# ONE event loop for the whole run: app/db/session.py creates a single global async engine
+# (connection pool), and asyncpg connections cannot move between event loops.
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
