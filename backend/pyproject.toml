@@ -23,3 +23,17 @@ dev = [
     "pytest>=9.1.1",
     "ruff>=0.16.1",
 ]
+
+[tool.ruff]
+# src/backend is a stray uv scaffold package, not part of the real app (app/). Notebooks are git-ignored scratch.
+extend-exclude = ["src", "*.ipynb"]
+
+[tool.ruff.lint]
+# Start with pyflakes (F) + pycodestyle errors that point at real bugs.
+# Add more rules later ("I" import sorting, "B" bugbear, ...) once the code is clean.
+select = ["E4", "E7", "E9", "F"]
+
+[tool.ruff.lint.per-file-ignores]
+# WIP: customer summary is not wired to a router yet. Delete these two lines when it is finished.
+"app/schemas/customer.py" = ["F401"]
+"app/services/customer_service.py" = ["F401", "F841"]
