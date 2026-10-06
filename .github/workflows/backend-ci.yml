@@ -86,5 +86,7 @@ jobs:
       - name: Import smoke test
         run: uv run python -c "from app.main import app; print(f'OK - {len(app.routes)} routes loaded')"
 
-      # TODO(session 2): add `uv run pytest` once real tests exist. Today test_db.py is a
-      # manual script (async test without pytest-asyncio), so pytest would fail on it.
+      # tests/conftest.py refuses to run unless the database name ends with "_test" (it TRUNCATEs
+      # tables). The schema and migrations were applied by the two steps above.
+      - name: Run tests (pytest)
+        run: uv run pytest -v --tb=short
