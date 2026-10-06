@@ -2,6 +2,10 @@ from datetime import date, timedelta
 from decimal import Decimal
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.schemas.product import (
+    TopProductsResponse,
+    TopProduct,
+)
 
 def calc_change_percent(current: Decimal, previous: Decimal) -> Decimal | None:
     """
@@ -13,11 +17,6 @@ def calc_change_percent(current: Decimal, previous: Decimal) -> Decimal | None:
         return None
     change = ((current - previous) / previous) * 100
     return change.quantize(Decimal("0.01"))
-
-from app.schemas.product import (
-    TopProductsResponse,
-    TopProduct,
-)
 
 async def get_top_products(
         db: AsyncSession,

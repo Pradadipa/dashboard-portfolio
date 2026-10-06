@@ -1,0 +1,90 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - "db/**"
+      - ".github/workflows/backend-ci.yml"
+  pull_request:
+    paths:
+      - "backend/**"
+      - "db/**"
+      - ".github/workflows/backend-ci.yml"
+
+# A new push to the same branch/PR cancels the older, now-useless run (saves free minutes).
+concurrency:
+  group: backend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Least privilege: this workflow only needs to read the code.
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: backend
+
+    services:
+      postgres:
+        image: postgres:16-alpine # same major version as docker-compose.yml
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: dashboard_test
+        ports:
+          - 5432:5432
+        # Wait until Postgres really accepts connections before the first step runs.
+        options: >-
+          --health-cmd "pg_isready -U test -d dashboard_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      # Read by app/core/config.py (pydantic-settings) - no .env file exists in CI.
+      DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/dashboard_test
+      BUSINESS_TIMEZONE: America/New_York
+      DEBUG: "false"
+      # Read by psql in the "Apply db/schema.sql" step.
+      PGHOST: localhost
+      PGPORT: "5432"
+      PGUSER: test
+      PGPASSWORD: test
+      PGDATABASE: dashboard_test
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      # --locked: fail if uv.lock is out of date with pyproject.toml, so CI == your laptop.
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Lint (ruff)
+        run: uv run ruff check .
+
+      # The shopify/ga4/ads/judgeme/auth schemas and views live in db/schema.sql, not in Alembic.
+      # Applying it to an empty database proves the schema file is valid SQL (idempotent, per CLAUDE.md).
+      - name: Apply db/schema.sql
+        run: psql -v ON_ERROR_STOP=1 -q -f ../db/schema.sql
+
+      - name: Run Alembic migrations
+        run: uv run alembic upgrade head
+
+      # Importing the app builds every router and Pydantic model, so a broken import or
+      # a bad route definition fails here instead of at container start-up.
+      - name: Import smoke test
+        run: uv run python -c "from app.main import app; print(f'OK - {len(app.routes)} routes loaded')"
+
+      # TODO(session 2): add `uv run pytest` once real tests exist. Today test_db.py is a
+      # manual script (async test without pytest-asyncio), so pytest would fail on it.
