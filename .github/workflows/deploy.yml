@@ -1,0 +1,64 @@
+name: Deploy
+
+# Manual on purpose (for now): Actions tab -> Deploy -> "Run workflow".
+# Rolling back is the same button with an older tag, e.g. sha-1a2b3c4.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Image tag: "latest", or "sha-<7 chars>" to pin / roll back to one commit'
+        required: false
+        default: latest
+
+# Never run two deployments at the same time, and never cancel one halfway through.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    # Only code that is on main may reach the server, even if someone starts this from another branch.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Secrets live in Settings -> Environments -> production (and can later require your approval).
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Check the tag
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          if [[ ! "$TAG" =~ ^[A-Za-z0-9._-]+$ ]]; then
+            echo "Invalid tag: '$TAG'" >&2
+            exit 1
+          fi
+
+      - name: Set up SSH
+        env:
+          SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      # The script runs on the server; its tag and folder are passed as arguments, never pasted into code.
+      - name: Deploy
+        env:
+          TAG: ${{ inputs.tag }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ secrets.VPS_PORT || '22' }}
+          APP_DIR: ${{ secrets.VPS_APP_DIR || 'dashboard' }}
+        run: |
+          ssh -i ~/.ssh/id_deploy -p "$VPS_PORT" \
+            -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            "$VPS_USER@$VPS_HOST" \
+            "bash -s -- $(printf '%q %q' "$APP_DIR" "$TAG")" < deploy/remote-deploy.sh

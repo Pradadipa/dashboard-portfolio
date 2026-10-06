@@ -1,0 +1,14 @@
+# Production override for the VPS: run the images that CI built and pushed to GHCR
+# (see .github/workflows/docker-images.yml) instead of building them on the small server.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml pull backend frontend
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-build --no-deps backend frontend
+#
+# IMAGE_TAG: "latest" (default) or "sha-<7 chars>" to pin / roll back to one specific commit.
+# `build:` stays in docker-compose.yml, so local development (`docker compose up --build`) is unchanged.
+# Image names are lowercase on purpose: GHCR rejects uppercase letters.
+services:
+  backend:
+    image: ghcr.io/pradadipa/dashboard-backend:${IMAGE_TAG:-latest}
+  frontend:
+    image: ghcr.io/pradadipa/dashboard-frontend:${IMAGE_TAG:-latest}
