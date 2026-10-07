@@ -1,3 +1,4 @@
+
 # Demo stack: nginx (static frontend + /api proxy) -> FastAPI -> Postgres.
 # Only port 80 is published; the database is reachable from other containers only.
 # The DB name must contain "demo" (db/anonymize_demo.sql refuses to run otherwise).
