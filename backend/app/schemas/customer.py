@@ -49,11 +49,9 @@ class CustomerSummary(BaseModel):
         ...,
         description="Repeat Purchase Rate (RPR) dalam periode",
         ge=0,
-        le=1,
-        examples=[0.67]
+        le=100
     )
     currency: str = Field(
-        ...,
         default="USD",
         description="Currency code untuk nilai monetary",
         min_length=3,
