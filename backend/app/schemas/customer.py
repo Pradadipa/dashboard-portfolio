@@ -57,3 +57,59 @@ class CustomerSummary(BaseModel):
         min_length=3,
         max_length=3
     )
+
+class RFMSegment(BaseModel):
+    """1 Segment dalam RFM analysis"""
+
+    segment: str = Field(
+        ...,
+        description="Nama segment (Champions, Loyal, At Risk, dll)"
+    )
+    customer_count: int = Field(
+        ...,
+        description="Jumlah customer di segment ini",
+        ge=0
+    )
+    avg_lifetime_value: Decimal = Field(
+        ...,
+        description="Average lifetime spend per customer segment",
+        ge=0
+    )
+    total_lifetime_value: Decimal = Field(
+        ...,
+        description="Total lifetime spend semua customer di segment",
+        ge=0
+    )
+    avg_orders: Decimal = Field(
+        ...,
+        description="Average jumlah order per customer di segment",
+        ge=0
+    )
+    avg_days_since_order: int = Field(
+        ...,
+        description="Average days sejak order terakhir",
+        ge=0
+    )
+    percentage: Decimal = Field(
+        ...,
+        description="% dari total active customers",
+        ge=0,
+        le=100
+    )
+
+class CustomerRFM(BaseModel):
+    """Response schema untuk customer RFM segmentation."""
+    
+    reference_date: date_type = Field(
+        ...,
+        description="Tanggal reference untuk recency calculation (CURRENT_DATE)",
+    )
+    total_active_customers: int = Field(
+        ...,
+        description="Total customer dengan minimal 1 order",
+        ge=0,
+    )
+    segments: list[RFMSegment] = Field(
+        ...,
+        description="List segment, sorted by priority order",
+    )
