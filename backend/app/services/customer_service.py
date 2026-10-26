@@ -1,9 +1,10 @@
 """Service layer untuk customer operations."""
-from datetime import date
+from datetime import date, datetime
 from dateutil.relativedelta import relativedelta
 from decimal import Decimal
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
+from zoneinfo import ZoneInfo
 
 from app.schemas.customer import (
     CustomerSummary, 
@@ -12,7 +13,10 @@ from app.schemas.customer import (
     TopCustomersResponse, 
     TopCustomer,
     AcquisitionTrenPoint,
-    AcquisitionTrend
+    AcquisitionTrend,
+    CohortRetentionCell,
+    CohortRetentionResponse,
+    CohortRetentionRow
 )
 from app.core.utils import mask_email
 
@@ -446,3 +450,127 @@ async def get_acquisition_trend(
         mom_change_percent=mom_change,
         current_repeat_rate=current_repeat_rate,
     )
+
+async def get_cohort_retention(
+        db: AsyncSession,
+        cohort_count: int = 12,
+        period_count: int = 6
+) -> CohortRetentionResponse:
+    """
+    Hitung cohort retention matrix.
+    
+    Setiap cohort = bulan customer first_purchase_at.
+    Retention % = (returners di period N) / cohort_size * 100.
+    
+    Period incomplete (belum lewat full month) di-return sebagai None.
+    """
+    query = text("""
+        WITH cohort_customers AS (
+            SELECT
+                customer_id,
+                date_trunc('month', first_purchase_at AT TIME ZONE 'America/New_York')::date AS cohort_month
+            FROM shopify.customers
+            WHERE first_purchase_at IS NOT NULL
+                AND first_purchase_at >= 
+                    (date_trunc('month', (CAST(:end_date AS DATE) AT TIME ZONE 'America/New_York'))::date
+                    - make_interval(months => :cohort_count))
+                AND first_purchase_at < 
+                    (date_trunc('month', (CAST(:end_date AS DATE) AT TIME ZONE 'America/New_York'))::date 
+                    + INTERVAL '1 month')
+        ),
+        cohort_sizes AS (
+            SELECT
+                cohort_month,
+                COUNT(DISTINCT customer_id) AS cohort_size
+            FROM cohort_customers
+            GROUP BY cohort_month
+        ),
+        customer_orders_monthly AS (
+            SELECT DISTINCT
+                o.customer_id,
+                date_trunc('month', o.created_at AT TIME ZONE 'America/New_York')::date AS order_month
+            FROM shopify.orders o
+            JOIN cohort_customers cc ON cc.customer_id = o.customer_id
+        ),
+        cohort_retention AS (
+            SELECT
+                cc.cohort_month,
+                (EXTRACT(YEAR FROM AGE(com.order_month, cc.cohort_month)) * 12 +
+                EXTRACT(MONTH FROM AGE(com.order_month, cc.cohort_month)))::int AS period_number,
+                COUNT(DISTINCT cc.customer_id) AS returners
+            FROM cohort_customers cc
+            JOIN customer_orders_monthly com ON com.customer_id = cc.customer_id
+            WHERE com.order_month > cc.cohort_month
+            GROUP BY cc.cohort_month, period_number
+        )
+        SELECT
+            cs.cohort_month,
+            cs.cohort_size,
+            cr.period_number,
+            COALESCE(cr.returners, 0) AS returners
+        FROM cohort_sizes cs
+        LEFT JOIN cohort_retention cr ON cr.cohort_month = cs.cohort_month
+        WHERE cr.period_number BETWEEN 1 AND :period_count
+        ORDER BY cs.cohort_month ASC, cr.period_number ASC
+    """)
+
+    result = await db.execute(
+        query,
+        {"cohort_count": cohort_count, "period_count": period_count, "start_date": date(2026, 1, 1), "end_date": date(2026, 7, 31)}
+    )
+    raw_rows = result.mappings().all()
+
+    cohort_map: dict[date, dict] = {}
+    for row in raw_rows:
+        cohort_month = row["cohort_month"]
+        if cohort_month not in cohort_map:
+            cohort_map[cohort_month] = {
+                "cohort_size": row["cohort_size"],
+                "cells_by_period":{}
+            }
+        cohort_map[cohort_month]["cells_by_period"][row["period_number"]] = row["returners"]
+
+    # Hari ini di new york timezone (acuan untuk period incomplete check)
+    today_ny = datetime.now(ZoneInfo("America/New_York")).date()
+    current_month_start = today_ny.replace(day=1)
+
+    # Build final response
+    rows_output = []
+    for cohort_month in sorted(cohort_map.keys()):
+        data = cohort_map[cohort_month]
+        cohort_size = data["cohort_size"]
+        cells_by_period = data["cells_by_period"]
+
+        cells = []
+        for period in range(1, period_count + 1):
+            # Check apakah period ini sudah lengkap
+            # Periode N artinya cohort_month + N bulan
+            period_end_month = cohort_month + relativedelta(month=period + 1)
+            is_incomplate = period_end_month > current_month_start
+
+            returners = cells_by_period.get(period, 0)
+
+            if is_incomplate:
+                retention_pct = None
+            else:
+                retention_pct = round(100.0 * returners / cohort_size, 2) if cohort_size > 0 else 0.0
+
+            cells.append(CohortRetentionCell(
+                period_number=period,
+                returners=returners,
+                retention_pct=retention_pct
+            ))
+
+        rows_output.append(CohortRetentionRow(
+            cohort_month=cohort_month,
+            cohort_size=cohort_size,
+            cells=cells
+        ))
+
+    return CohortRetentionResponse(
+        cohort_count=len(rows_output),
+        period_count=period_count,
+        rows=rows_output
+    )
+
+

@@ -8,9 +8,11 @@ from app.schemas.customer import (
     CustomerSummary, 
     CustomerRFM,
     TopCustomersResponse,
-    AcquisitionTrend
+    AcquisitionTrend,
+    CohortRetentionResponse
     )
 from app.services.customer_service import (
+    get_cohort_retention,
     get_customer_summary, 
     get_customer_rfm_segmentation,
     get_top_customers,
@@ -127,3 +129,22 @@ async def customer_acquisition_trend(
     - context metrics: current month total, MoM change, current repeat rate
     """
     return await get_acquisition_trend(db, months)
+
+@router.get(
+    "/cohort-retention",
+    response_model=CohortRetentionResponse,
+    summary="Cohort retention matrix"
+)
+async def cohort_retention_endpoint(
+    cohort_count: int = Query(12, ge=1, le=24, description="Jumlah cohort (bulan ke belakang)"),
+    period_count: int = Query(6, ge=1, le=12, description="Jumlah periode retensi (bulan ke depan)"),
+    db: AsyncSession = Depends(get_db)
+) -> CohortRetentionResponse:
+    """
+    Get cohort retention matrix.
+    
+    Returns:
+    - cohort_months: list of cohort months (YYYY-MM)
+    - retention_matrix: 2D list with retention rates per cohort and period
+    """
+    return await get_cohort_retention(db, cohort_count, period_count)

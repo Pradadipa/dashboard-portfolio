@@ -4,6 +4,7 @@ import CustomerSummaryCards from "../components/CustomerSummaryCards";
 import CustomerRFMChart from "../components/CustomerRFMChart";
 import TopCustomersTable from "../components/TopCustomersTable";
 import CustomerAcquisitionTrend from "../components/CustomerAcquisitionTrend";
+import CohortRetention from "../components/CohortRetention";
 import { DEFAULT_START_DATE, DEFAULT_END_DATE } from "../lib/dateDefaults";
 
 function CustomersPage() {
@@ -41,6 +42,9 @@ function CustomersPage() {
 
         {/* Acquisition Trend (standalone, 12 months) */}
         <CustomerAcquisitionTrend />
+
+        {/* Cohort Retention (standalone, 12 cohorts × 6 periods) */}
+        <CohortRetention />
 
         {/* Placeholder */}
         <div className="bg-card p-6 rounded-lg border border-subtle text-center text-tertiary">

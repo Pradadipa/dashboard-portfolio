@@ -195,3 +195,24 @@ class AcquisitionTrend(BaseModel):
         le=100,
         description="Repeat rate di bulan terakhir"
     )
+
+class CohortRetentionCell(BaseModel):
+    """Single cell dalam cohort retention matrix"""
+    period_number: int = Field(..., description="Period relatif dari cohort month (1 = M+1, 2 = M+2, dst)")
+    returners: int = Field(..., description="Jumlah customer dari cohort yang order di period ini")
+    retention_pct: float | None = Field(
+        None,
+        description="Persentase retention. None jika period belum lengkap (future/current month)."
+    )
+
+class CohortRetentionRow(BaseModel):
+    """Satu row cohort — satu bulan acquisition dengan retention per period."""
+    cohort_month: date_type = Field(..., description="Bulan customer first purchase (first day of month)")
+    cohort_size: int = Field(..., description="Jumlah total customer di cohort ini")
+    cells: list[CohortRetentionCell] = Field(..., description="Retention cells dari M+1 sampai M+N")
+
+class CohortRetentionResponse(BaseModel):
+    """Response untuk endpoint cohort retention."""
+    cohort_count: int = Field(..., description="Jumlah cohort yang dianalisis")
+    period_count: int = Field(..., description="Jumlah period per cohort")
+    rows: list[CohortRetentionRow] = Field(..., description="Cohort rows, oldest first (natural reading)")
