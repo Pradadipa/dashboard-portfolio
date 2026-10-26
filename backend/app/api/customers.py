@@ -4,8 +4,20 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
-from app.schemas.customer import CustomerSummary, CustomerRFM
-from app.services.customer_service import get_customer_summary, get_customer_rfm_segmentation
+from app.schemas.customer import (
+    CustomerSummary, 
+    CustomerRFM,
+    TopCustomersResponse,
+    AcquisitionTrend,
+    CohortRetentionResponse
+    )
+from app.services.customer_service import (
+    get_cohort_retention,
+    get_customer_summary, 
+    get_customer_rfm_segmentation,
+    get_top_customers,
+    get_acquisition_trend
+    )
 
 # Create a router for customer-related endpoints
 router = APIRouter(prefix="/api/customers", tags=["customers"])
@@ -69,4 +81,70 @@ async def customer_rfm(
     melihat lifetime customer behavior.
     """
     return await get_customer_rfm_segmentation(db)
+
+@router.get(
+    "/top",
+    response_model=TopCustomersResponse,
+    summary="Get top customers by lifetime value with RFM segment"
+)
+async def customer_top(
+    limit: int = Query(
+        default=10,
+        description="Jumlah top customers (max 50)",
+        ge=1,
+        le=50
+    ),
+    db: AsyncSession = Depends(get_db)
+) -> TopCustomersResponse:
+    """
+    Get top N customers by lifetime value.
     
+    Response includes:
+    - Masked email untuk privacy
+    - Lifetime value, orders count
+    - Geographic info (country, province)
+    - Cross-reference RFM segment
+    """
+    return await get_top_customers(db, limit)
+
+@router.get(
+    "/acquisition-trend",
+    response_model=AcquisitionTrend,
+    summary="Get customer acquisition trend over N months"
+)
+async def customer_acquisition_trend(
+    months: int = Query(
+        default=12,
+        description="Jumlah bulan ke belakang",
+        ge=1,
+        le=36
+    ),
+    db: AsyncSession = Depends(get_db)
+) -> AcquisitionTrend:
+    """
+    Get customer acquisition trend selama N bulan terakhir (default 12).
+    
+    Returns:
+    - data_points: time series dengan new, returning, total active, repeat rate per bulan
+    - context metrics: current month total, MoM change, current repeat rate
+    """
+    return await get_acquisition_trend(db, months)
+
+@router.get(
+    "/cohort-retention",
+    response_model=CohortRetentionResponse,
+    summary="Cohort retention matrix"
+)
+async def cohort_retention_endpoint(
+    cohort_count: int = Query(12, ge=1, le=24, description="Jumlah cohort (bulan ke belakang)"),
+    period_count: int = Query(6, ge=1, le=12, description="Jumlah periode retensi (bulan ke depan)"),
+    db: AsyncSession = Depends(get_db)
+) -> CohortRetentionResponse:
+    """
+    Get cohort retention matrix.
+    
+    Returns:
+    - cohort_months: list of cohort months (YYYY-MM)
+    - retention_matrix: 2D list with retention rates per cohort and period
+    """
+    return await get_cohort_retention(db, cohort_count, period_count)
