@@ -20,6 +20,17 @@ from app.schemas.customer import (
 )
 from app.core.utils import mask_email
 
+# The demo dataset ends in July 2026, so reports are anchored there instead of "today".
+REPORT_END_MONTH = date(2026, 7, 1)
+
+
+def _month_window(end_month: date, months: int) -> tuple[date, date]:
+    """(first month, first day after the last month) of the `months` months ending at end_month."""
+    start_month = end_month - relativedelta(months=months - 1)
+    end_month_next = end_month + relativedelta(months=1)
+    return start_month, end_month_next
+
+
 async def get_customer_summary(
         db: AsyncSession,
         start_date: date,
@@ -326,7 +337,9 @@ async def get_top_customers(
 
 async def get_acquisition_trend(
         db: AsyncSession,
-        months: int = 12
+        months: int = 12,
+        *,
+        end_month: date = REPORT_END_MONTH,
 ) -> AcquisitionTrend:
     """
     Get customer acquisition trend selama N bulan terakhir.
@@ -342,28 +355,25 @@ async def get_acquisition_trend(
     """
 
     # Calculate period range
-    today = date(2026, 7, 1)
-    end_month = today.replace(day=1)
-    start_month = end_month - relativedelta(months=months-1)
-    end_month_next = end_month + relativedelta(months=1)
+    start_month, end_month_next = _month_window(end_month, months)
 
     query = text("""
         WITH months AS (
             SELECT generate_series(
-                date_trunc('month', CAST(:start_month AS date)),
-                date_trunc('month', CAST(:end_month AS date)),
+                CAST(:start_month AS date),
+                CAST(:end_month AS date),
                 '1 month'::interval
             )::date AS month_start
         ),
         new_per_month AS (
             SELECT
-                date_trunc('month', first_purchase_at::date) ::date AS month_start,
+                date_trunc('month', first_purchase_at AT TIME ZONE 'America/New_York')::date AS month_start,
                 COUNT(DISTINCT customer_id) AS new_count
             FROM
                 shopify.customers
             WHERE first_purchase_at IS NOT NULL
-                AND first_purchase_at::date >= :start_month
-                AND first_purchase_at::date < :end_month_next
+                AND (first_purchase_at AT TIME ZONE 'America/New_York')::date >= :start_month
+                AND (first_purchase_at AT TIME ZONE 'America/New_York')::date < :end_month_next
             GROUP BY
                 month_start
         ),
@@ -374,7 +384,7 @@ async def get_acquisition_trend(
             FROM shopify.orders o
             JOIN shopify.customers c ON c.customer_id = o.customer_id
             WHERE c.first_purchase_at IS NOT NULL
-                AND date_trunc('month', c.first_purchase_at::date) < date_trunc('month', (o.created_at AT TIME ZONE 'America/New_York')::date)
+                AND date_trunc('month', c.first_purchase_at AT TIME ZONE 'America/New_York') < date_trunc('month', (o.created_at AT TIME ZONE 'America/New_York')::date)
                 AND (o.created_at AT TIME ZONE 'America/New_York')::date >= :start_month
                 AND (o.created_at AT TIME ZONE 'America/New_York')::date < :end_month_next
             GROUP BY month_start

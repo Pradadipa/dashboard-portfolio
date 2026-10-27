@@ -16,6 +16,38 @@ def utc(year: int, month: int, day: int, hour: int = 12, minute: int = 0) -> dat
     return datetime(year, month, day, hour, minute, tzinfo=UTC)
 
 
+async def add_customer(
+    db: AsyncSession,
+    customer_id: int,
+    first_purchase_at: datetime | None,
+    *,
+    number_of_orders: int = 1,
+) -> None:
+    await db.execute(
+        text(
+            """
+            INSERT INTO shopify.customers (customer_id, first_purchase_at, number_of_orders)
+            VALUES (:id, :first_purchase_at, :number_of_orders)
+            """
+        ),
+        {
+            "id": customer_id,
+            "first_purchase_at": first_purchase_at,
+            "number_of_orders": number_of_orders,
+        },
+    )
+    await db.commit()
+
+
+async def set_session_tz(db: AsyncSession, tz: str = "Asia/Kuala_Lumpur") -> None:
+    """Pretend the DB session runs in a non-New-York zone (dev runs in Asia/Kuala_Lumpur).
+
+    SET LOCAL lasts until the transaction ends, so call it AFTER seeding (the factories
+    commit) and call the service right after, in the same session.
+    """
+    await db.execute(text(f"SET LOCAL TIME ZONE '{tz}'"))
+
+
 async def add_order(
     db: AsyncSession,
     order_id: int,
@@ -23,17 +55,20 @@ async def add_order(
     *,
     net_payment: str | None = None,
     channel: str | None = None,
+    customer_id: int | None = None,
 ) -> None:
     await db.execute(
         text(
             """
             INSERT INTO shopify.orders
-                (order_id, order_name, created_at, total_amount, net_payment, total_refunded)
-            VALUES (:id, :name, :created_at, :amount, :amount, 0)
+                (order_id, order_name, created_at, total_amount, net_payment, total_refunded,
+                 customer_id)
+            VALUES (:id, :name, :created_at, :amount, :amount, 0, :customer_id)
             """
         ),
         {
             "id": order_id,
+            "customer_id": customer_id,
             "name": f"#{order_id}",
             "created_at": created_at,
             "amount": Decimal(net_payment) if net_payment else None,
