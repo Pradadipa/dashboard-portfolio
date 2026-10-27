@@ -62,3 +62,18 @@ async def test_new_customers_equal_cohort_sizes(db):
     sizes = {r.cohort_month.strftime("%Y-%m"): r.cohort_size for r in cohort.rows}
     assert new == sizes
     assert sum(sizes.values()) == 6
+
+
+async def test_periods_after_end_month_are_incomplete(db):
+    await add_customer(db, 1, utc(2026, 6, 10))
+    await add_order(db, 101, utc(2026, 6, 10), customer_id=1)
+    await add_order(db, 102, utc(2026, 7, 10), customer_id=1)
+    await add_customer(db, 2, utc(2026, 7, 10))
+
+    resp = await get_cohort_retention(
+        db, cohort_count=2, period_count=2, end_month=date(2026, 7, 1)
+    )
+
+    jun, jul = resp.rows
+    assert [c.retention_pct for c in jun.cells] == [100.0, None]  # July done, August not
+    assert [c.retention_pct for c in jul.cells] == [None, None]

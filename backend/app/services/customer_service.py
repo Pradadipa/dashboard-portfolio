@@ -1,10 +1,9 @@
 """Service layer untuk customer operations."""
-from datetime import date, datetime
+from datetime import date
 from dateutil.relativedelta import relativedelta
 from decimal import Decimal
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
-from zoneinfo import ZoneInfo
 
 from app.schemas.customer import (
     CustomerSummary, 
@@ -547,10 +546,6 @@ async def get_cohort_retention(
         if row["period_number"] is not None:
             cohort_map[cohort_month]["cells_by_period"][row["period_number"]] = row["returners"]
 
-    # Hari ini di new york timezone (acuan untuk period incomplete check)
-    today_ny = datetime.now(ZoneInfo("America/New_York")).date()
-    current_month_start = today_ny.replace(day=1)
-
     # Build final response
     rows_output = []
     for cohort_month in sorted(cohort_map.keys()):
@@ -560,14 +555,12 @@ async def get_cohort_retention(
 
         cells = []
         for period in range(1, period_count + 1):
-            # Check apakah period ini sudah lengkap
-            # Periode N artinya cohort_month + N bulan
-            period_end_month = cohort_month + relativedelta(month=period + 1)
-            is_incomplate = period_end_month > current_month_start
+            # Periode N artinya cohort_month + N bulan; belum lengkap kalau lewat end_month
+            is_incomplete = cohort_month + relativedelta(months=period) > end_month
 
             returners = cells_by_period.get(period, 0)
 
-            if is_incomplate:
+            if is_incomplete:
                 retention_pct = None
             else:
                 retention_pct = round(100.0 * returners / cohort_size, 2) if cohort_size > 0 else 0.0
