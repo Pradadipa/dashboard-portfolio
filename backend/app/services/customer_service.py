@@ -464,7 +464,9 @@ async def get_acquisition_trend(
 async def get_cohort_retention(
         db: AsyncSession,
         cohort_count: int = 12,
-        period_count: int = 6
+        period_count: int = 6,
+        *,
+        end_month: date = REPORT_END_MONTH,
 ) -> CohortRetentionResponse:
     """
     Hitung cohort retention matrix.
@@ -481,12 +483,8 @@ async def get_cohort_retention(
                 date_trunc('month', first_purchase_at AT TIME ZONE 'America/New_York')::date AS cohort_month
             FROM shopify.customers
             WHERE first_purchase_at IS NOT NULL
-                AND first_purchase_at >= 
-                    (date_trunc('month', (CAST(:end_date AS DATE) AT TIME ZONE 'America/New_York'))::date
-                    - make_interval(months => :cohort_count))
-                AND first_purchase_at < 
-                    (date_trunc('month', (CAST(:end_date AS DATE) AT TIME ZONE 'America/New_York'))::date 
-                    + INTERVAL '1 month')
+                AND (first_purchase_at AT TIME ZONE 'America/New_York')::date >= :start_month
+                AND (first_purchase_at AT TIME ZONE 'America/New_York')::date < :end_month_next
         ),
         cohort_sizes AS (
             SELECT
@@ -519,14 +517,21 @@ async def get_cohort_retention(
             cr.period_number,
             COALESCE(cr.returners, 0) AS returners
         FROM cohort_sizes cs
+        -- Period filter lives in ON, not WHERE, so cohorts without returners still show up
         LEFT JOIN cohort_retention cr ON cr.cohort_month = cs.cohort_month
-        WHERE cr.period_number BETWEEN 1 AND :period_count
+            AND cr.period_number BETWEEN 1 AND :period_count
         ORDER BY cs.cohort_month ASC, cr.period_number ASC
     """)
 
+    start_month, end_month_next = _month_window(end_month, cohort_count)
+
     result = await db.execute(
         query,
-        {"cohort_count": cohort_count, "period_count": period_count, "start_date": date(2026, 1, 1), "end_date": date(2026, 7, 31)}
+        {
+            "period_count": period_count,
+            "start_month": start_month,
+            "end_month_next": end_month_next,
+        }
     )
     raw_rows = result.mappings().all()
 
@@ -538,7 +543,9 @@ async def get_cohort_retention(
                 "cohort_size": row["cohort_size"],
                 "cells_by_period":{}
             }
-        cohort_map[cohort_month]["cells_by_period"][row["period_number"]] = row["returners"]
+        # A cohort without returners comes back as one row with period_number NULL
+        if row["period_number"] is not None:
+            cohort_map[cohort_month]["cells_by_period"][row["period_number"]] = row["returners"]
 
     # Hari ini di new york timezone (acuan untuk period incomplete check)
     today_ny = datetime.now(ZoneInfo("America/New_York")).date()
