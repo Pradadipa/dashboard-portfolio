@@ -5,18 +5,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
 from app.schemas.customer import (
-    CustomerSummary, 
+    CustomerSummary,
     CustomerRFM,
     TopCustomersResponse,
     AcquisitionTrend,
-    CohortRetentionResponse
+    CohortRetentionResponse,
+    AcquisitionChannelQualityResponse,
     )
 from app.services.customer_service import (
     get_cohort_retention,
-    get_customer_summary, 
+    get_customer_summary,
     get_customer_rfm_segmentation,
     get_top_customers,
-    get_acquisition_trend
+    get_acquisition_trend,
+    get_acquisition_channel_quality,
     )
 
 # Create a router for customer-related endpoints
@@ -148,3 +150,32 @@ async def cohort_retention_endpoint(
     - retention_matrix: 2D list with retention rates per cohort and period
     """
     return await get_cohort_retention(db, cohort_count, period_count)
+
+
+@router.get(
+    "/acquisition-channel-quality",
+    response_model=AcquisitionChannelQualityResponse,
+    summary="Channel quality by first-order attribution"
+)
+async def customer_acquisition_channel_quality(
+    db: AsyncSession = Depends(get_db)
+) -> AcquisitionChannelQualityResponse:
+    """
+    Analisis kualitas acquisition per channel.
+
+    Scope: customers dengan first_purchase_at antara 180-90 hari sebelum report end.
+    Scope ini guarantee M3 (90 hari) complete untuk semua customer dalam cohort,
+    sehingga comparison antar channel fair.
+
+    Returns per channel:
+    - volume (new_customers, pct_of_total)
+    - retention quality (repeat_by_m3_pct)
+    - value (avg_projected_12mo_value = amount × 12/tenure_months)
+    - health (hibernating_pct, konsisten dengan RFM R_score ≤ 2)
+
+    Plus benchmark metric (avg_repeat_by_m3_pct) sebagai reference line di chart.
+
+    Channel normalization MIRROR ga4.v_monthly_channel_conversion di schema.sql
+    supaya konsisten dengan dashboard GA4.
+    """
+    return await get_acquisition_channel_quality(db)

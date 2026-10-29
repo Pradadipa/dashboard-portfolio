@@ -5,6 +5,7 @@ import CustomerRFMChart from "../components/CustomerRFMChart";
 import TopCustomersTable from "../components/TopCustomersTable";
 import CustomerAcquisitionTrend from "../components/CustomerAcquisitionTrend";
 import CohortRetention from "../components/CohortRetention";
+import AcquisitionChannelQuality from "../components/AcquisitionChannelQuality";
 import { DEFAULT_START_DATE, DEFAULT_END_DATE } from "../lib/dateDefaults";
 
 function CustomersPage() {
@@ -45,6 +46,9 @@ function CustomersPage() {
 
         {/* Cohort Retention (standalone, 12 cohorts × 6 periods) */}
         <CohortRetention />
+
+        {/* Acquisition Channel Quality (standalone, cohort 180-90 hari sebelum report end) */}
+        <AcquisitionChannelQuality />
 
         {/* Placeholder */}
         <div className="bg-card p-6 rounded-lg border border-subtle text-center text-tertiary">

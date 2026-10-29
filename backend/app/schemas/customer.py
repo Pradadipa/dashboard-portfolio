@@ -216,3 +216,93 @@ class CohortRetentionResponse(BaseModel):
     cohort_count: int = Field(..., description="Jumlah cohort yang dianalisis")
     period_count: int = Field(..., description="Jumlah period per cohort")
     rows: list[CohortRetentionRow] = Field(..., description="Cohort rows, oldest first (natural reading)")
+
+
+class ChannelMetrics(BaseModel):
+    """1 channel dengan metrics-nya untuk acquisition channel quality analysis."""
+
+    channel: str = Field(
+        ...,
+        description="Nama channel (Paid Social, Email, Organic Search, dll)"
+    )
+    new_customers: int = Field(
+        ...,
+        description="Jumlah customer yang first purchase-nya via channel ini",
+        ge=0
+    )
+    pct_of_total: Decimal = Field(
+        ...,
+        description="% share dari total new customers dalam cohort",
+        ge=0,
+        le=100
+    )
+    repeat_by_m3_pct: Decimal = Field(
+        ...,
+        description="% customer dari channel ini yang return (order kedua) dalam 90 hari dari first purchase",
+        ge=0,
+        le=100
+    )
+    avg_projected_12mo_value: Decimal = Field(
+        ...,
+        description="Projected 12-month LTV: amount_spent x (12 / tenure_months). "
+                    "Over-projects untuk one-timer, tapi valid sebagai comparison antar channel.",
+        ge=0
+    )
+    hibernating_pct: Decimal = Field(
+        ...,
+        description="% customer dari channel ini yang hibernating (last_order > 180 hari lalu). "
+                    "Konsisten dengan RFM definition (R_score <= 2).",
+        ge=0,
+        le=100
+    )
+
+
+class AcquisitionChannelQualityResponse(BaseModel):
+    """
+    Response schema untuk Acquisition Channel Quality widget.
+
+    Scope: customers dengan first_purchase_at antara 180-90 hari sebelum reference.
+    Ini guarantee M3 (90 hari) complete untuk semua customer dalam cohort,
+    sehingga comparison antar channel fair.
+    """
+
+    cohort_start: date_type = Field(
+        ...,
+        description="Awal periode cohort (reference - 180 hari)"
+    )
+    cohort_end: date_type = Field(
+        ...,
+        description="Akhir periode cohort (reference - 90 hari, exclusive)"
+    )
+    total_new_customers: int = Field(
+        ...,
+        description="Total new customers dalam cohort window",
+        ge=0
+    )
+    avg_repeat_by_m3_pct: Decimal = Field(
+        ...,
+        description="Weighted average repeat-by-M3 across all channels, "
+                    "dipakai sebagai benchmark line di chart",
+        ge=0,
+        le=100
+    )
+    top_channel: str = Field(
+        ...,
+        description="Channel dengan volume terbanyak"
+    )
+    top_channel_share: Decimal = Field(
+        ...,
+        description="% share top channel",
+        ge=0,
+        le=100
+    )
+    top_channel_repeat_rate: Decimal = Field(
+        ...,
+        description="Repeat-by-M3 % top channel (untuk headline insight)",
+        ge=0,
+        le=100
+    )
+    channels: list[ChannelMetrics] = Field(
+        ...,
+        description="List channel sorted by volume descending"
+    )
