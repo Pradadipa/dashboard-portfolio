@@ -6,16 +6,18 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.schemas.customer import (
-    CustomerSummary, 
-    CustomerRFM, 
-    RFMSegment, 
-    TopCustomersResponse, 
+    CustomerSummary,
+    CustomerRFM,
+    RFMSegment,
+    TopCustomersResponse,
     TopCustomer,
     AcquisitionTrenPoint,
     AcquisitionTrend,
     CohortRetentionCell,
     CohortRetentionResponse,
-    CohortRetentionRow
+    CohortRetentionRow,
+    ChannelMetrics,
+    AcquisitionChannelQualityResponse,
 )
 from app.core.utils import mask_email
 
@@ -581,6 +583,162 @@ async def get_cohort_retention(
         cohort_count=len(rows_output),
         period_count=period_count,
         rows=rows_output
+    )
+
+
+async def get_acquisition_channel_quality(
+    db: AsyncSession,
+    *,
+    reference_date: date = REPORT_END_MONTH,
+) -> AcquisitionChannelQualityResponse:
+    """
+    Hitung channel quality untuk cohort 180-90 hari sebelum reference_date.
+
+    Metrics per channel:
+    - new_customers: volume
+    - pct_of_total: share dari total
+    - repeat_by_m3_pct: % customer yang return dalam 90 hari dari first purchase
+    - avg_projected_12mo_value: amount_spent × (12 / tenure_months)
+    - hibernating_pct: % customer dengan last_order > 180 hari lalu (R_score <= 2)
+
+    Channel normalization logic MIRRORS ga4.v_monthly_channel_conversion di schema
+    supaya widget konsisten dengan dashboard GA4 lain.
+    """
+    cohort_start = reference_date - relativedelta(days=180)
+    cohort_end = reference_date - relativedelta(days=90)
+    hibernating_threshold = reference_date - relativedelta(days=180)
+
+    query = text("""
+        WITH cohort_customers AS (
+            SELECT
+                c.customer_id,
+                c.first_purchase_at,
+                c.first_order_id,
+                c.amount_spent,
+                c.last_order_at,
+                c.number_of_orders,
+                -- Tenure dalam bulan dari reference_date. GREATEST(..., 3) sebagai
+                -- defensive floor; cohort window selalu 3-6 bulan jadi normalnya tidak kena.
+                GREATEST(
+                    EXTRACT(YEAR FROM AGE(
+                        CAST(:reference_date AS date),
+                        (c.first_purchase_at AT TIME ZONE 'America/New_York')::date
+                    )) * 12 +
+                    EXTRACT(MONTH FROM AGE(
+                        CAST(:reference_date AS date),
+                        (c.first_purchase_at AT TIME ZONE 'America/New_York')::date
+                    )),
+                    3
+                )::int AS tenure_months
+            FROM shopify.customers c
+            WHERE c.first_purchase_at IS NOT NULL
+              AND (c.first_purchase_at AT TIME ZONE 'America/New_York')::date >= :cohort_start
+              AND (c.first_purchase_at AT TIME ZONE 'America/New_York')::date < :cohort_end
+              AND c.number_of_orders > 0
+        ),
+        first_order_channels AS (
+            -- Join ke attribution via first_order_id untuk dapat channel acquisition.
+            -- Logic normalization mirror ga4.v_monthly_channel_conversion (schema.sql).
+            SELECT
+                cc.customer_id,
+                cc.first_purchase_at,
+                cc.amount_spent,
+                cc.last_order_at,
+                cc.tenure_months,
+                CASE
+                    WHEN a.traffic_channel = 'Paid Social'                        THEN 'Paid Social'
+                    WHEN a.traffic_channel IN ('Paid Search','Paid Other','Paid') THEN 'Paid Search'
+                    WHEN a.traffic_channel = 'Email'                              THEN 'Email'
+                    WHEN a.traffic_channel IN ('SMS','Text')                      THEN 'SMS'
+                    WHEN a.traffic_channel = 'Seo'
+                         OR LOWER(a.traffic_source) IN ('google','bing','yahoo','duckduckgo') THEN 'Organic Search'
+                    WHEN LOWER(a.traffic_source) = 'direct'                       THEN 'Direct'
+                    WHEN LOWER(a.traffic_source) IN ('facebook','instagram')      THEN 'Organic Social'
+                    WHEN a.order_id IS NULL                                       THEN 'Unknown'
+                    ELSE 'Unassigned'
+                END AS channel
+            FROM cohort_customers cc
+            LEFT JOIN shopify.order_attribution a ON a.order_id = cc.first_order_id
+        ),
+        m3_returners AS (
+            -- Customer yang punya order kedua dalam 90 hari dari first_purchase.
+            -- > bukan >= untuk exclude the first order itself.
+            SELECT DISTINCT fc.customer_id
+            FROM first_order_channels fc
+            JOIN shopify.orders o ON o.customer_id = fc.customer_id
+            WHERE o.created_at > fc.first_purchase_at
+              AND o.created_at <= fc.first_purchase_at + INTERVAL '90 days'
+        ),
+        channel_aggregated AS (
+            SELECT
+                fc.channel,
+                COUNT(*)                                                     AS new_customers,
+                COUNT(*) FILTER (WHERE m3.customer_id IS NOT NULL)           AS repeated_m3,
+                AVG(fc.amount_spent * 12.0 / fc.tenure_months)               AS avg_projected_12mo,
+                COUNT(*) FILTER (
+                    WHERE (fc.last_order_at AT TIME ZONE 'America/New_York')::date
+                          < :hibernating_threshold
+                )                                                            AS hibernating_count
+            FROM first_order_channels fc
+            LEFT JOIN m3_returners m3 ON m3.customer_id = fc.customer_id
+            GROUP BY fc.channel
+        )
+        SELECT
+            channel,
+            new_customers,
+            repeated_m3,
+            ROUND(100.0 * new_customers / NULLIF(SUM(new_customers) OVER (), 0), 1) AS pct_of_total,
+            ROUND(100.0 * repeated_m3 / NULLIF(new_customers, 0), 1)                AS repeat_by_m3_pct,
+            ROUND(COALESCE(avg_projected_12mo, 0), 0)                               AS avg_projected_12mo_value,
+            ROUND(100.0 * hibernating_count / NULLIF(new_customers, 0), 1)          AS hibernating_pct
+        FROM channel_aggregated
+        WHERE new_customers > 0
+        ORDER BY new_customers DESC
+    """)
+
+    result = await db.execute(
+        query,
+        {
+            "cohort_start": cohort_start,
+            "cohort_end": cohort_end,
+            "reference_date": reference_date,
+            "hibernating_threshold": hibernating_threshold,
+        },
+    )
+    rows = result.mappings().all()
+
+    channels = [
+        ChannelMetrics(
+            channel=row["channel"],
+            new_customers=int(row["new_customers"]),
+            pct_of_total=row["pct_of_total"] or Decimal("0"),
+            repeat_by_m3_pct=row["repeat_by_m3_pct"] or Decimal("0"),
+            avg_projected_12mo_value=row["avg_projected_12mo_value"] or Decimal("0"),
+            hibernating_pct=row["hibernating_pct"] or Decimal("0"),
+        )
+        for row in rows
+    ]
+
+    # Weighted average M3 repeat rate (benchmark line di chart).
+    # Pakai total_m3_returners / total_new supaya cohort kecil tidak distorsi.
+    total_new = sum(int(row["new_customers"]) for row in rows)
+    total_m3_returners = sum(int(row["repeated_m3"]) for row in rows)
+    avg_repeat_by_m3 = (
+        (Decimal(total_m3_returners) * 100 / Decimal(total_new))
+        if total_new > 0 else Decimal("0")
+    )
+
+    top = channels[0] if channels else None
+
+    return AcquisitionChannelQualityResponse(
+        cohort_start=cohort_start,
+        cohort_end=cohort_end,
+        total_new_customers=total_new,
+        avg_repeat_by_m3_pct=round(avg_repeat_by_m3, 1),
+        top_channel=top.channel if top else "N/A",
+        top_channel_share=top.pct_of_total if top else Decimal("0"),
+        top_channel_repeat_rate=top.repeat_by_m3_pct if top else Decimal("0"),
+        channels=channels,
     )
 
 
