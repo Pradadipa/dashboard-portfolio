@@ -64,7 +64,21 @@ async def test_new_customers_equal_cohort_sizes(db):
     assert sum(sizes.values()) == 6
 
 
-async def test_periods_after_end_month_are_incomplete(db):
+async def test_range_end_does_not_hide_later_retention(db):
+    """The range picks the cohorts. Their retention is still known up to the report end."""
+    await add_customer(db, 1, utc(2026, 5, 10))
+    await add_order(db, 101, utc(2026, 5, 10), customer_id=1)
+    await add_order(db, 102, utc(2026, 6, 10), customer_id=1)
+
+    resp = await get_cohort_retention(
+        db, cohort_count=1, period_count=3, end_month=date(2026, 5, 1)
+    )
+
+    # June came back, July did not, August is after the report end (July 2026)
+    assert [c.retention_pct for c in resp.rows[0].cells] == [100.0, 0.0, None]
+
+
+async def test_periods_after_report_end_are_incomplete(db):
     await add_customer(db, 1, utc(2026, 6, 10))
     await add_order(db, 101, utc(2026, 6, 10), customer_id=1)
     await add_order(db, 102, utc(2026, 7, 10), customer_id=1)

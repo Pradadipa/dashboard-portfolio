@@ -106,7 +106,7 @@ class CustomerRFM(BaseModel):
     )
     total_active_customers: int = Field(
         ...,
-        description="Total customer dengan minimal 1 order",
+        description="Total customer dengan minimal 1 order dalam date range",
         ge=0,
     )
     segments: list[RFMSegment] = Field(

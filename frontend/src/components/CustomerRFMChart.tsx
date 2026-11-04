@@ -84,7 +84,12 @@ function formatCurrencyCompact(value: number): string {
   return `$${value.toFixed(0)}`;
 }
 
-function CustomerRFMChart() {
+interface CustomerRFMChartProps {
+  startDate: string;
+  endDate: string;
+}
+
+function CustomerRFMChart({ startDate, endDate }: CustomerRFMChartProps) {
   const [data, setData] = useState<CustomerRFM | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -95,7 +100,13 @@ function CustomerRFMChart() {
       setError(null);
       try {
         const response = await axios.get<CustomerRFM>(
-          "http://localhost:8000/api/customers/rfm"
+          "http://localhost:8000/api/customers/rfm",
+          {
+            params: {
+              start_date: startDate,
+              end_date: endDate,
+            },
+          }
         );
         setData(response.data);
       } catch (err) {
@@ -106,7 +117,7 @@ function CustomerRFMChart() {
       }
     };
     fetchData();
-  }, []);
+  }, [startDate, endDate]);
 
   if (loading)
     return (
@@ -126,6 +137,13 @@ function CustomerRFMChart() {
     );
 
   if (!data) return null;
+
+  if (data.segments.length === 0)
+    return (
+      <div className="bg-card p-6 rounded-lg border border-subtle text-secondary">
+        Tidak ada customer yang order pada periode ini.
+      </div>
+    );
 
   // Transform data untuk table
   const rows: SegmentRow[] = data.segments.map((seg) => {
@@ -165,7 +183,8 @@ function CustomerRFMChart() {
             Customer Segmentation (RFM)
           </h2>
           <p className="text-sm text-secondary mt-1">
-            Recency × Frequency × Monetary — 10 segments based on lifetime behavior
+            Customers who ordered in the selected period, labeled by lifetime behavior
+            (Recency × Frequency × Monetary)
           </p>
         </div>
 

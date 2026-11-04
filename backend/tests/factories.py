@@ -22,18 +22,23 @@ async def add_customer(
     first_purchase_at: datetime | None,
     *,
     number_of_orders: int = 1,
+    last_order_at: datetime | None = None,
+    amount_spent: str | None = None,
 ) -> None:
     await db.execute(
         text(
             """
-            INSERT INTO shopify.customers (customer_id, first_purchase_at, number_of_orders)
-            VALUES (:id, :first_purchase_at, :number_of_orders)
+            INSERT INTO shopify.customers
+                (customer_id, first_purchase_at, number_of_orders, last_order_at, amount_spent)
+            VALUES (:id, :first_purchase_at, :number_of_orders, :last_order_at, :amount_spent)
             """
         ),
         {
             "id": customer_id,
             "first_purchase_at": first_purchase_at,
             "number_of_orders": number_of_orders,
+            "last_order_at": last_order_at,
+            "amount_spent": Decimal(amount_spent) if amount_spent else None,
         },
     )
     await db.commit()

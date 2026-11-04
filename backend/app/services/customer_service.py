@@ -32,6 +32,12 @@ def _month_window(end_month: date, months: int) -> tuple[date, date]:
     return start_month, end_month_next
 
 
+def month_span(start_date: date, end_date: date) -> tuple[int, date]:
+    """(number of months, last month) of the whole months touched by start_date..end_date."""
+    months = (end_date.year - start_date.year) * 12 + end_date.month - start_date.month + 1
+    return months, end_date.replace(day=1)
+
+
 async def get_customer_summary(
         db: AsyncSession,
         start_date: date,
@@ -107,11 +113,16 @@ async def get_customer_summary(
     )
 
 async def get_customer_rfm_segmentation(
-        db: AsyncSession
+        db: AsyncSession,
+        start_date: date,
+        end_date: date
 ) -> CustomerRFM:
     """
-    Compute RFM segmentation untuk semua active customers.
-    
+    Compute RFM segmentation untuk customers yang order dalam date range.
+
+    Date range hanya menentukan siapa yang dihitung. Scoring tetap atas semua customer,
+    supaya label customer tidak berubah mengikuti date range (sama dengan Top Customers).
+
     Hybrid scoring approach:
     - R (Recency): Fixed buckets (0-90, 90-180, 180-365, 1-2yr, 2yr+)
     - F (Frequency): Fixed buckets (1, 2, 3, 4-10, 11+)
@@ -178,7 +189,14 @@ async def get_customer_rfm_segmentation(
             ROUND(AVG(frequency)::numeric, 1) AS avg_orders,
             ROUND(AVG(recency_days)::numeric, 0) AS avg_days_since_order,
             ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER (), 2) AS percentage
-        FROM segmented
+        FROM segmented s
+        WHERE EXISTS (
+            SELECT 1
+            FROM shopify.orders o
+            WHERE o.customer_id = s.customer_id
+                AND (o.created_at AT TIME ZONE 'America/New_York')::date >= :start_date
+                AND (o.created_at AT TIME ZONE 'America/New_York')::date <= :end_date
+        )
         GROUP BY segment
         ORDER BY
             CASE segment
@@ -196,7 +214,7 @@ async def get_customer_rfm_segmentation(
             END
     """)
 
-    result = await db.execute(query)
+    result = await db.execute(query, {"start_date": start_date, "end_date": end_date})
     rows = result.all()
 
     # Build segment list
@@ -474,8 +492,9 @@ async def get_cohort_retention(
     
     Setiap cohort = bulan customer first_purchase_at.
     Retention % = (returners di period N) / cohort_size * 100.
-    
-    Period incomplete (belum lewat full month) di-return sebagai None.
+
+    cohort_count + end_month hanya memilih cohort. Period incomplete (lewat REPORT_END_MONTH,
+    bukan end_month) di-return sebagai None, karena retention sesudah end_month tetap diketahui.
     """
     query = text("""
         WITH cohort_customers AS (
@@ -557,8 +576,8 @@ async def get_cohort_retention(
 
         cells = []
         for period in range(1, period_count + 1):
-            # Periode N artinya cohort_month + N bulan; belum lengkap kalau lewat end_month
-            is_incomplete = cohort_month + relativedelta(months=period) > end_month
+            # Periode N artinya cohort_month + N bulan; belum lengkap kalau lewat report end
+            is_incomplete = cohort_month + relativedelta(months=period) > REPORT_END_MONTH
 
             returners = cells_by_period.get(period, 0)
 
