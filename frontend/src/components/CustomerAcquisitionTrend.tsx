@@ -126,7 +126,12 @@ function CustomTooltip({ active, payload }: TooltipProps) {
   );
 }
 
-function CustomerAcquisitionTrend() {
+interface CustomerAcquisitionTrendProps {
+  startDate: string;
+  endDate: string;
+}
+
+function CustomerAcquisitionTrend({ startDate, endDate }: CustomerAcquisitionTrendProps) {
   const [data, setData] = useState<AcquisitionTrend | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -139,7 +144,7 @@ function CustomerAcquisitionTrend() {
         const response = await axios.get<AcquisitionTrend>(
           "http://localhost:8000/api/customers/acquisition-trend",
           {
-            params: { months: 12 },
+            params: { start_date: startDate, end_date: endDate },
           }
         );
         setData(response.data);
@@ -151,7 +156,7 @@ function CustomerAcquisitionTrend() {
       }
     };
     fetchData();
-  }, []);
+  }, [startDate, endDate]);
 
   if (loading)
     return (
@@ -172,9 +177,12 @@ function CustomerAcquisitionTrend() {
 
   if (!data || data.data_points.length === 0) return null;
 
+  // Lebih dari 12 bulan: nama bulan berulang, jadi label perlu tahun
+  const showYear = data.data_points.length > 12;
+
   // Transform ke chart format
   const chartData = data.data_points.map((p) => ({
-    monthLabel: formatMonthLabel(p.month),
+    monthLabel: showYear ? formatMonthFull(p.month) : formatMonthLabel(p.month),
     originalMonth: p.month,
     new: p.new_customers,
     returning: p.returning_customers,
@@ -184,7 +192,7 @@ function CustomerAcquisitionTrend() {
   // Header context
   const momChange = data.mom_change_percent ? Number(data.mom_change_percent) : null;
   const currentRepeatRate = Number(data.current_repeat_rate);
-  const currentMonthLabel = formatMonthLabel(data.end_month);
+  const currentMonthLabel = formatMonthFull(data.end_month);
 
   // Trend direction
   const isPositive = momChange !== null && momChange > 0;

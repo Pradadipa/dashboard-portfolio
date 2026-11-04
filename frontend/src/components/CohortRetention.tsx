@@ -44,7 +44,12 @@ function getRetentionTextColor(pct: number | null): string {
   return "#fef3e2"; // light text on dark orange
 }
 
-function CohortRetention() {
+interface CohortRetentionProps {
+  startDate: string;
+  endDate: string;
+}
+
+function CohortRetention({ startDate, endDate }: CohortRetentionProps) {
   const [data, setData] = useState<CohortRetentionResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -57,7 +62,7 @@ function CohortRetention() {
         const response = await axios.get<CohortRetentionResponse>(
           "http://localhost:8000/api/customers/cohort-retention",
           {
-            params: { cohort_count: 12, period_count: 6 },
+            params: { start_date: startDate, end_date: endDate, period_count: 6 },
           }
         );
         setData(response.data);
@@ -69,7 +74,7 @@ function CohortRetention() {
       }
     };
     fetchData();
-  }, []);
+  }, [startDate, endDate]);
 
   if (loading)
     return (
@@ -88,7 +93,14 @@ function CohortRetention() {
       </div>
     );
 
-  if (!data || data.rows.length === 0) return null;
+  if (!data) return null;
+
+  if (data.rows.length === 0)
+    return (
+      <div className="bg-card p-6 rounded-lg border border-subtle text-secondary">
+        Tidak ada cohort pada periode ini.
+      </div>
+    );
 
   const periodNumbers = Array.from(
     { length: data.period_count },

@@ -5,18 +5,21 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
 from app.schemas.customer import (
-    CustomerSummary, 
+    CustomerSummary,
     CustomerRFM,
     TopCustomersResponse,
     AcquisitionTrend,
-    CohortRetentionResponse
+    CohortRetentionResponse,
+    AcquisitionChannelQualityResponse,
     )
 from app.services.customer_service import (
     get_cohort_retention,
-    get_customer_summary, 
+    get_customer_summary,
     get_customer_rfm_segmentation,
+    month_span,
     get_top_customers,
-    get_acquisition_trend
+    get_acquisition_trend,
+    get_acquisition_channel_quality,
     )
 
 # Create a router for customer-related endpoints
@@ -61,6 +64,16 @@ async def customer_summary(
     summary="Get RFM customer segmentation"
 )
 async def customer_rfm(
+    start_date: date = Query(
+        ...,
+        description="Start date for the customers counted (YYYY-MM-DD)",
+        examples=["2026-07-01"],
+    ),
+    end_date: date = Query(
+        ...,
+        description="End date for the customers counted (YYYY-MM-DD)",
+        examples=["2026-07-31"],
+    ),
     db: AsyncSession = Depends(get_db)
 ) -> CustomerRFM:
     """
@@ -77,10 +90,15 @@ async def customer_rfm(
     - F: Fixed buckets by orders count (1, 2, 3, 4-10, 11+)
     - M: NTILE(5) auto-balance berdasarkan amount_spent
     
-    Endpoint standalone — tidak ikut date filter karena RFM
-    melihat lifetime customer behavior.
+    Date range menentukan customer yang dihitung (punya order dalam range).
+    Label segment dan nilai LTV tetap dari lifetime customer behavior.
     """
-    return await get_customer_rfm_segmentation(db)
+    if end_date < start_date:
+        raise HTTPException(
+            status_code=400,
+            detail="end_date tidak boleh sebelum start_date"
+        )
+    return await get_customer_rfm_segmentation(db, start_date, end_date)
 
 @router.get(
     "/top",
@@ -110,25 +128,35 @@ async def customer_top(
 @router.get(
     "/acquisition-trend",
     response_model=AcquisitionTrend,
-    summary="Get customer acquisition trend over N months"
+    summary="Get customer acquisition trend for a month range"
 )
 async def customer_acquisition_trend(
-    months: int = Query(
-        default=12,
-        description="Jumlah bulan ke belakang",
-        ge=1,
-        le=36
+    start_date: date = Query(
+        ...,
+        description="Tanggal di bulan pertama (YYYY-MM-DD)",
+        examples=["2025-08-01"],
+    ),
+    end_date: date = Query(
+        ...,
+        description="Tanggal di bulan terakhir (YYYY-MM-DD)",
+        examples=["2026-07-31"],
     ),
     db: AsyncSession = Depends(get_db)
 ) -> AcquisitionTrend:
     """
-    Get customer acquisition trend selama N bulan terakhir (default 12).
-    
+    Get customer acquisition trend untuk setiap bulan dalam range.
+
     Returns:
     - data_points: time series dengan new, returning, total active, repeat rate per bulan
     - context metrics: current month total, MoM change, current repeat rate
     """
-    return await get_acquisition_trend(db, months)
+    if end_date < start_date:
+        raise HTTPException(
+            status_code=400,
+            detail="end_date tidak boleh sebelum start_date"
+        )
+    months, end_month = month_span(start_date, end_date)
+    return await get_acquisition_trend(db, months, end_month=end_month)
 
 @router.get(
     "/cohort-retention",
@@ -136,15 +164,59 @@ async def customer_acquisition_trend(
     summary="Cohort retention matrix"
 )
 async def cohort_retention_endpoint(
-    cohort_count: int = Query(12, ge=1, le=24, description="Jumlah cohort (bulan ke belakang)"),
+    start_date: date = Query(
+        ...,
+        description="Tanggal di bulan cohort pertama (YYYY-MM-DD)",
+        examples=["2025-08-01"],
+    ),
+    end_date: date = Query(
+        ...,
+        description="Tanggal di bulan cohort terakhir (YYYY-MM-DD)",
+        examples=["2026-07-31"],
+    ),
     period_count: int = Query(6, ge=1, le=12, description="Jumlah periode retensi (bulan ke depan)"),
     db: AsyncSession = Depends(get_db)
 ) -> CohortRetentionResponse:
     """
-    Get cohort retention matrix.
-    
+    Get cohort retention matrix untuk cohort dalam month range.
+
     Returns:
     - cohort_months: list of cohort months (YYYY-MM)
     - retention_matrix: 2D list with retention rates per cohort and period
     """
-    return await get_cohort_retention(db, cohort_count, period_count)
+    if end_date < start_date:
+        raise HTTPException(
+            status_code=400,
+            detail="end_date tidak boleh sebelum start_date"
+        )
+    months, end_month = month_span(start_date, end_date)
+    return await get_cohort_retention(db, months, period_count, end_month=end_month)
+
+
+@router.get(
+    "/acquisition-channel-quality",
+    response_model=AcquisitionChannelQualityResponse,
+    summary="Channel quality by first-order attribution"
+)
+async def customer_acquisition_channel_quality(
+    db: AsyncSession = Depends(get_db)
+) -> AcquisitionChannelQualityResponse:
+    """
+    Analisis kualitas acquisition per channel.
+
+    Scope: customers dengan first_purchase_at antara 180-90 hari sebelum report end.
+    Scope ini guarantee M3 (90 hari) complete untuk semua customer dalam cohort,
+    sehingga comparison antar channel fair.
+
+    Returns per channel:
+    - volume (new_customers, pct_of_total)
+    - retention quality (repeat_by_m3_pct)
+    - value (avg_projected_12mo_value = amount × 12/tenure_months)
+    - health (hibernating_pct, konsisten dengan RFM R_score ≤ 2)
+
+    Plus benchmark metric (avg_repeat_by_m3_pct) sebagai reference line di chart.
+
+    Channel normalization MIRROR ga4.v_monthly_channel_conversion di schema.sql
+    supaya konsisten dengan dashboard GA4.
+    """
+    return await get_acquisition_channel_quality(db)
